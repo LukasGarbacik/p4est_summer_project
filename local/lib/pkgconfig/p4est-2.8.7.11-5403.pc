@@ -1,0 +1,16 @@
+
+prefix=/home/lukasg/p4est_playground/p4est/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: p4est
+Description: p4est manages a collection---a forest---of octrees in parallel.
+Version: 2.8.7.11-5403
+URL: https://www.p4est.org/
+
+Requires: libsc >= 2.8.6
+
+Cflags: -I${prefix}/include
+Libs: -L${exec_prefix}/lib -lp4est
+Libs.private:  -lz -lm 
