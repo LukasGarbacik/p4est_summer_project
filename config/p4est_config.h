@@ -257,7 +257,7 @@
 
 /* Define to the full name and version of this package. */
 #ifndef P4EST_PACKAGE_STRING
-#define P4EST_PACKAGE_STRING "p4est 2.8.7.11-5403"
+#define P4EST_PACKAGE_STRING "p4est 2.8.7.12-cf1ab"
 #endif
 
 /* Define to the one symbol short name of this package. */
@@ -272,7 +272,7 @@
 
 /* Define to the version of this package. */
 #ifndef P4EST_PACKAGE_VERSION
-#define P4EST_PACKAGE_VERSION "2.8.7.11-5403"
+#define P4EST_PACKAGE_VERSION "2.8.7.12-cf1ab"
 #endif
 
 /* DEPRECATED (use P4EST_WITH_PETSC instead) */
@@ -299,7 +299,7 @@
 
 /* Version number of package */
 #ifndef P4EST_VERSION
-#define P4EST_VERSION "2.8.7.11-5403"
+#define P4EST_VERSION "2.8.7.12-cf1ab"
 #endif
 
 /* Package major version */
@@ -314,7 +314,7 @@
 
 /* Package point version */
 #ifndef P4EST_VERSION_POINT
-#define P4EST_VERSION_POINT 7.11-5403
+#define P4EST_VERSION_POINT 7.12-cf1ab
 #endif
 
 /* DEPRECATED (use P4EST_ENABLE_VTK_BINARY instead) */

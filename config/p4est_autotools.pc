@@ -6,7 +6,7 @@ includedir=${prefix}/include
 
 Name: p4est
 Description: p4est manages a collection---a forest---of octrees in parallel.
-Version: 2.8.7.11-5403
+Version: 2.8.7.12-cf1ab
 URL: https://www.p4est.org/
 
 Requires: libsc >= 2.8.6

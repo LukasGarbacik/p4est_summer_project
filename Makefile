@@ -361,7 +361,12 @@ am__append_36 = example/userdata/p4est_userdata
 am__append_37 = example/userdata/p8est_userdata
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/p4est_include.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
+	$(top_srcdir)/config/ltoptions.m4 \
+	$(top_srcdir)/config/ltsugar.m4 \
+	$(top_srcdir)/config/ltversion.m4 \
+	$(top_srcdir)/config/lt~obsolete.m4 \
+	$(top_srcdir)/config/p4est_include.m4 \
 	$(top_srcdir)/config/p4est_metis.m4 \
 	$(top_srcdir)/config/p4est_petsc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -2204,10 +2209,10 @@ PACKAGE = p4est
 PACKAGE_BUGREPORT = p4est@ins.uni-bonn.de
 PACKAGE_NAME = p4est
 PACKAGE_PREFIX = P4EST
-PACKAGE_STRING = p4est 2.8.7.11-5403
+PACKAGE_STRING = p4est 2.8.7.12-cf1ab
 PACKAGE_TARNAME = p4est
 PACKAGE_URL = 
-PACKAGE_VERSION = 2.8.7.11-5403
+PACKAGE_VERSION = 2.8.7.12-cf1ab
 PATH_SEPARATOR = :
 PETSCARCH_PROG = 
 RANLIB = ranlib
@@ -2215,7 +2220,7 @@ SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 2.8.7.11-5403
+VERSION = 2.8.7.12-cf1ab
 abs_builddir = /home/lukasg/p4est_playground/p4est
 abs_srcdir = /home/lukasg/p4est_playground/p4est
 abs_top_builddir = /home/lukasg/p4est_playground/p4est
