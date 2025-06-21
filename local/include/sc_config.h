@@ -24,22 +24,34 @@
 #endif
 
 /* Define to 1 if we are using MPI */
-/* #undef ENABLE_MPI */
+#ifndef SC_ENABLE_MPI
+#define SC_ENABLE_MPI 1
+#endif
 
 /* Define to 1 if we can use MPI_COMM_TYPE_SHARED */
-/* #undef ENABLE_MPICOMMSHARED */
+#ifndef SC_ENABLE_MPICOMMSHARED
+#define SC_ENABLE_MPICOMMSHARED 1
+#endif
 
 /* Define to 1 if we are using MPI I/O */
-/* #undef ENABLE_MPIIO */
+#ifndef SC_ENABLE_MPIIO
+#define SC_ENABLE_MPIIO 1
+#endif
 
 /* Define to 1 if we can use MPI split nodes and shared memory */
-/* #undef ENABLE_MPISHARED */
+#ifndef SC_ENABLE_MPISHARED
+#define SC_ENABLE_MPISHARED 1
+#endif
 
 /* Define to 1 if we are using MPI_Init_thread */
-/* #undef ENABLE_MPITHREAD */
+#ifndef SC_ENABLE_MPITHREAD
+#define SC_ENABLE_MPITHREAD 1
+#endif
 
 /* Define to 1 if we can use MPI_Win_allocate_shared */
-/* #undef ENABLE_MPIWINSHARED */
+#ifndef SC_ENABLE_MPIWINSHARED
+#define SC_ENABLE_MPIWINSHARED 1
+#endif
 
 /* enable POSIX threads: Using --enable-pthread without arguments does not
    specify any CFLAGS; to supply CFLAGS use --enable-pthread=<PTHREAD_CFLAGS>.
@@ -71,7 +83,9 @@
 #endif
 
 /* Define to 1 if we have MPI_Aint_diff */
-/* #undef HAVE_AINT_DIFF */
+#ifndef SC_HAVE_AINT_DIFF
+#define SC_HAVE_AINT_DIFF 1
+#endif
 
 /* Define to 1 if you have the `aligned_alloc' function. */
 #ifndef SC_HAVE_ALIGNED_ALLOC
@@ -168,13 +182,19 @@
 #endif
 
 /* Define to 1 if we have MPI_INT8_T */
-/* #undef HAVE_MPI_INT8_T */
+#ifndef SC_HAVE_MPI_INT8_T
+#define SC_HAVE_MPI_INT8_T 1
+#endif
 
 /* Define to 1 if we have MPI_SIGNED_CHAR */
-/* #undef HAVE_MPI_SIGNED_CHAR */
+#ifndef SC_HAVE_MPI_SIGNED_CHAR
+#define SC_HAVE_MPI_SIGNED_CHAR 1
+#endif
 
 /* Define to 1 if we have MPI_UNSIGNED_LONG_LONG */
-/* #undef HAVE_MPI_UNSIGNED_LONG_LONG */
+#ifndef SC_HAVE_MPI_UNSIGNED_LONG_LONG
+#define SC_HAVE_MPI_UNSIGNED_LONG_LONG 1
+#endif
 
 /* Define to 1 if you have the `posix_memalign' function. */
 #ifndef SC_HAVE_POSIX_MEMALIGN
@@ -285,10 +305,14 @@
 #endif
 
 /* DEPRECATED (use SC_ENABLE_MPI instead) */
-/* #undef MPI */
+#ifndef SC_MPI
+#define SC_MPI 1
+#endif
 
 /* DEPRECATED (use SC_ENABLE_MPIIO instead) */
-/* #undef MPIIO */
+#ifndef SC_MPIIO
+#define SC_MPIIO 1
+#endif
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */

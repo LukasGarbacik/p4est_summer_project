@@ -82,6 +82,9 @@ foreach(n IN ITEMS timana.awk timana.sh tsrana.awk tsrana.sh perfscript.sh)
   p4est_copy_resource(timings ${n})
 endforeach()
 
+# Add the mobius example
+p4est_example(moebius moebius.c ".")
+
 if(enable_p8est)
   p8est_example(tsearch3 timings/tsearch3.c "timings")
 endif()

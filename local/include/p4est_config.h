@@ -57,22 +57,34 @@
 #endif
 
 /* Define to 1 if we are using MPI */
-/* #undef ENABLE_MPI */
+#ifndef P4EST_ENABLE_MPI
+#define P4EST_ENABLE_MPI 1
+#endif
 
 /* Define to 1 if we can use MPI_COMM_TYPE_SHARED */
-/* #undef ENABLE_MPICOMMSHARED */
+#ifndef P4EST_ENABLE_MPICOMMSHARED
+#define P4EST_ENABLE_MPICOMMSHARED 1
+#endif
 
 /* Define to 1 if we are using MPI I/O */
-/* #undef ENABLE_MPIIO */
+#ifndef P4EST_ENABLE_MPIIO
+#define P4EST_ENABLE_MPIIO 1
+#endif
 
 /* Define to 1 if we can use MPI split nodes and shared memory */
-/* #undef ENABLE_MPISHARED */
+#ifndef P4EST_ENABLE_MPISHARED
+#define P4EST_ENABLE_MPISHARED 1
+#endif
 
 /* Define to 1 if we are using MPI_Init_thread */
-/* #undef ENABLE_MPITHREAD */
+#ifndef P4EST_ENABLE_MPITHREAD
+#define P4EST_ENABLE_MPITHREAD 1
+#endif
 
 /* Define to 1 if we can use MPI_Win_allocate_shared */
-/* #undef ENABLE_MPIWINSHARED */
+#ifndef P4EST_ENABLE_MPIWINSHARED
+#define P4EST_ENABLE_MPIWINSHARED 1
+#endif
 
 /* enable POSIX threads: Using --enable-pthread without arguments does not
    specify any CFLAGS; to supply CFLAGS use --enable-pthread=<PTHREAD_CFLAGS>.
@@ -108,7 +120,9 @@
 /* #undef FILE_DEPRECATED */
 
 /* Define to 1 if we have MPI_Aint_diff */
-/* #undef HAVE_AINT_DIFF */
+#ifndef P4EST_HAVE_AINT_DIFF
+#define P4EST_HAVE_AINT_DIFF 1
+#endif
 
 /* Define to 1 if you have the `aligned_alloc' function. */
 #ifndef P4EST_HAVE_ALIGNED_ALLOC
@@ -155,13 +169,19 @@
 #endif
 
 /* Define to 1 if we have MPI_INT8_T */
-/* #undef HAVE_MPI_INT8_T */
+#ifndef P4EST_HAVE_MPI_INT8_T
+#define P4EST_HAVE_MPI_INT8_T 1
+#endif
 
 /* Define to 1 if we have MPI_SIGNED_CHAR */
-/* #undef HAVE_MPI_SIGNED_CHAR */
+#ifndef P4EST_HAVE_MPI_SIGNED_CHAR
+#define P4EST_HAVE_MPI_SIGNED_CHAR 1
+#endif
 
 /* Define to 1 if we have MPI_UNSIGNED_LONG_LONG */
-/* #undef HAVE_MPI_UNSIGNED_LONG_LONG */
+#ifndef P4EST_HAVE_MPI_UNSIGNED_LONG_LONG
+#define P4EST_HAVE_MPI_UNSIGNED_LONG_LONG 1
+#endif
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #ifndef P4EST_HAVE_NETINET_IN_H
@@ -232,10 +252,14 @@
 /* #undef METIS */
 
 /* DEPRECATED (use P4EST_ENABLE_MPI instead) */
-/* #undef MPI */
+#ifndef P4EST_MPI
+#define P4EST_MPI 1
+#endif
 
 /* DEPRECATED (use P4EST_ENABLE_MPIIO instead) */
-/* #undef MPIIO */
+#ifndef P4EST_MPIIO
+#define P4EST_MPIIO 1
+#endif
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */
@@ -257,7 +281,7 @@
 
 /* Define to the full name and version of this package. */
 #ifndef P4EST_PACKAGE_STRING
-#define P4EST_PACKAGE_STRING "p4est 2.8.7.11-5403"
+#define P4EST_PACKAGE_STRING "p4est 2.8.7.999"
 #endif
 
 /* Define to the one symbol short name of this package. */
@@ -272,7 +296,7 @@
 
 /* Define to the version of this package. */
 #ifndef P4EST_PACKAGE_VERSION
-#define P4EST_PACKAGE_VERSION "2.8.7.11-5403"
+#define P4EST_PACKAGE_VERSION "2.8.7.999"
 #endif
 
 /* DEPRECATED (use P4EST_WITH_PETSC instead) */
@@ -299,7 +323,7 @@
 
 /* Version number of package */
 #ifndef P4EST_VERSION
-#define P4EST_VERSION "2.8.7.11-5403"
+#define P4EST_VERSION "2.8.7.999"
 #endif
 
 /* Package major version */
@@ -314,7 +338,7 @@
 
 /* Package point version */
 #ifndef P4EST_VERSION_POINT
-#define P4EST_VERSION_POINT 7.11-5403
+#define P4EST_VERSION_POINT 7.999
 #endif
 
 /* DEPRECATED (use P4EST_ENABLE_VTK_BINARY instead) */

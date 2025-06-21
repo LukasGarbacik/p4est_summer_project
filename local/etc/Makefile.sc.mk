@@ -8,7 +8,7 @@ sc_exec_prefix = ${sc_prefix}
 sc_sysconfdir = ${sc_prefix}/etc
 
 # SC_CC and SC_CFLAGS may not be necessary for your project
-SC_CC = gcc
+SC_CC = mpicc
 SC_CFLAGS = -g -O2
 
 # These pull in sc but none of its dependencies

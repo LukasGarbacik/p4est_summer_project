@@ -10,7 +10,7 @@ p4est_sysconfdir = ${p4est_prefix}/etc
 include ${p4est_sysconfdir}/Makefile.sc.mk
 
 # P4EST_CC and P4EST_CFLAGS may not be necessary for your project
-P4EST_CC = gcc
+P4EST_CC = mpicc
 P4EST_CFLAGS = -g -O2
 
 # These pull in p4est but none of its dependencies
