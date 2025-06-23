@@ -1,4 +1,3 @@
-
 # This file is part of p4est.
 # Makefile.am in toplevel directory
 
@@ -77,6 +76,7 @@ include example/steps/Makefile.am
 include example/tetgen/Makefile.am
 include example/timings/Makefile.am
 include example/userdata/Makefile.am
+include example/tests/Makefile.am
 
 # revision control and ChangeLog
 ChangeLog:
