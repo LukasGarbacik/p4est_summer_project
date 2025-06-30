@@ -35,14 +35,23 @@ int main(int argc, char **argv) {
     mpi_context_t mpi_context, *mpi = &mpi_context;
     p8est_t *p8est;
     p8est_connectivity_t *connectivity;
-    int                 refine_level;
+    int refine_level, nX, nY, nZ, periodic;
 
     //pass refine level as command line argument
-    if (argc < 2) {
-      printf("Usage: %s <refine_level>\n", argv[0]);
+
+    //input args
+    //cube -> c <refinment level>
+    //brick -> b <refinment level> <nX> <nY> <nZ> <periodic>
+    if (argc < 3) {
       return -1;
     }
-    refine_level = atoi(argv[1]);
+    if (strcmp(argv[1],  "b") == 0){
+      nX = atoi(argv[3]);
+      nY = atoi(argv[4]);
+      nZ = atoi(argv[5]);
+      periodic = atoi(argv[6]); //1 = y 0 = n
+    }
+    refine_level = atoi(argv[2]);
 
     mpiret = sc_MPI_Init(&argc, &argv);
     SC_CHECK_MPI (mpiret);
@@ -55,9 +64,20 @@ int main(int argc, char **argv) {
     sc_init (mpi->mpicomm, 1, 1, NULL, SC_LP_DEFAULT);
     p4est_init (NULL, SC_LP_DEFAULT);
 
-    connectivity = p8est_connectivity_new_unitcube();
+    if (strcmp(argv[1],  "b") == 0){
+      connectivity = p8est_connectivity_new_brick(nX, nY, nZ, periodic, periodic, periodic);
+    }
+    else{
+      connectivity = p8est_connectivity_new_unitcube();
+    }
     
-    p8est = p8est_new_ext(mpi->mpicomm, connectivity, 0, refine_level, 1, 0, NULL, NULL);
+    p8est = p8est_new_ext(mpi->mpicomm, connectivity, 
+                        /* Min number of quadrants */0, 
+                        refine_level, 
+                        /* uniform t/f */1, 
+                        /* size of octant data struct */0, 
+                        /* quadrant initalization function */ NULL,
+                        /* pointer for global data struct */ NULL);
 
     P4EST_GLOBAL_INFO("Writing initial mesh to uniform_mesh_initial.vtu");
     p8est_vtk_write_file(p8est, NULL, "uniform_mesh_initial");
@@ -86,7 +106,7 @@ int main(int argc, char **argv) {
     for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
         fprintf(file, "Rank %d: Octant %d (local):\n", mpi->mpirank, i);
         for (int face = 0; face < P8EST_FACES; ++face) {
-            p4est_locidx_t neighbor_id = mesh->quad_to_quad[i * P8EST_FACES + face];
+            p4est_locidx_t neighbor_id = mesh->quad_to_quad[i * P8EST_FACES + face]; //size = P8EST_FACES * mesh->local_num_quadrants
             
           //condition-
           //if neighbor_id == i -> boundary since self ref for no face found
