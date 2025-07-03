@@ -7,7 +7,10 @@ if P4EST_ENABLE_BUILD_3D
 bin_PROGRAMS += example/tests/working
 
 ## Define the source file for the 'working' program.
-## The name format follows the convention <directory>_<program>_SOURCES.
 example_tests_working_SOURCES = example/tests/working.c
 
 endif
+
+## does not require the 3d stuff at all
+bin_PROGRAMS += example/tests/orbit
+example_tests_orbit_SOURCES = example/tests/orbit.c
