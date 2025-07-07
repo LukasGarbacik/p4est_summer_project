@@ -11,6 +11,8 @@
 
 #include "orbit.h"
 
+#define p_per_quad 5
+
 mpi_context_t mpi_init(int argc, char **argv) {
 
     mpi_context_t mpi_context;
@@ -34,12 +36,21 @@ p4est_t * p4est_setup(mpi_context_t *mpi_context) {
     p4est_connectivity_t *connectivity = p4est_connectivity_new_unitsquare();
 
     p4est_t *p4est = p4est_new_ext(mpi_context.mpicomm, connectivity, 0, 1, 
-                                    /*octant struct size*/0, 
-                                    /*quadrant init fxn */0,
+                                    /*octant struct size*/ sizeof(particle_buffer_t), 
+                                    /*quadrant init fxn */ quad_init,
                                     /*pointer for global data struct */ NULL);
 
     return p4est;
 }
+
+void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
+    particle_buffer_t *buf = (particle_buffer_t) quadrant->p.user_data;
+    buf->count = p_per_quad;
+    buf->particles = malloc(buf->count * sizeof(particle_t));
+    //initalize random particles within quadrant
+}
+
+
 void cleanup(p4est_t *p4est) {
     p4est_destroy(p4est);
     sc_finalize();
@@ -52,6 +63,11 @@ void run(int argc, char **argv) {
     p4est_t *p4est = p4est_setup(&mpi_context);
 
     p4est_partition(p4est, 0, NULL); // 0 and NULL for uniform weight distribution
+
+    p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
+    p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL)
+
+
 
     cleanup(p4est);
 
