@@ -8,6 +8,7 @@
 #include <sc_options.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "orbit.h"
 
@@ -27,6 +28,8 @@ mpi_context_t mpi_init(int argc, char **argv) {
 
     sc_init (mpi_context.mpicomm, 1, 1, NULL, SC_LP_DEFAULT);
 
+    srand(time(NULL) + mpi_context.mpirank);
+
     return mpi_context;
 }
 
@@ -43,11 +46,40 @@ p4est_t * p4est_setup(mpi_context_t *mpi_context) {
     return p4est;
 }
 
+particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
+    double lower_pos[2], upper_pos[2]; //lower left and upper right
+
+    p4est_qcoord_t length = P4EST_QUADRANT_LEN(quadrant->level);
+
+    // Lower-left corner
+    p4est_qcoord_to_vertex(p4est->connectivity, which_tree, quadrant->x, quadrant->y, lower_pos);
+
+    // Upper-right corner
+    p4est_qcoord_to_vertex(p4est->connectivity, which_tree, quadrant->x + length, quadrant->y + length, upper_pos);
+
+    //random positioning
+    double rand_x = (double)rand() / RAND_MAX;
+    double rand_y = (double)rand() / RAND_MAX;
+
+    particle_t particle;
+
+    particle.x = lower_pos[0] + (upper_pos[0] - lower_pos[0]) * rand_x;
+    particle.y = lower_pos[1] + (upper_pos[1] - lower_pos[1]) * rand_y;
+
+    //velocity of particle (0 temp)
+    particle.vx = 0;
+    particle.vy = 0;
+
+    return particle;
+}
+
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
-    particle_buffer_t *buf = (particle_buffer_t) quadrant->p.user_data;
+    particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
     buf->particles = malloc(buf->count * sizeof(particle_t));
-    //initalize random particles within quadrant
+    for(int i = 0; i < p_per_quad; i++){
+        buf->particles[i] = particle_single_init(p4est, which_tree, quadrant);
+    }
 }
 
 
