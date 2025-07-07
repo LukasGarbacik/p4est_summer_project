@@ -5,5 +5,11 @@ typedef struct {
 } mpi_context_t;
 
 
-//global data structure for the demo
+
+mpi_context_t mpi_init(int argc, char **argv);
+p4est_t * p4est_setup(mpi_context_t *mpi_context);
+void cleanup(p4est_t *p4est);
+void run(int argc, char **argv);
+
+
 
