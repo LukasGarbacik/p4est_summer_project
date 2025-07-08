@@ -15,6 +15,10 @@
 
 #define p_per_quad 5
 
+#define grav_const 1
+
+#define timestep 0.1
+
 static sc_rand_state_t global_rand_state;
 static int global_mpi_rank = -1;
 
@@ -86,9 +90,15 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     particle.x = xs + rand_x;
     particle.y = ys + rand_y;
     
-    //velocity of particle (0 temp)
-    particle.vx = 0;
-    particle.vy = 0;
+    //velocity of particle calculation
+    double dx, dy;
+    dx = particle.x - planet_xyz[0];
+    dy = particle.y - planet_xyz[1];
+    double r = SC_SQR(dx*dx + dy*dy); //dist from planet
+    double v = SC_SQR(grav_const * planet_mass / r); //magnitude of velocity
+
+    particle.vx = -v * dy / r;
+    particle.vy = -v * dx / r;
     
     return particle;
 }
@@ -137,9 +147,7 @@ void cleanup(p4est_t *p4est) {
 
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context){
     for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
-        p4est_topidx_t which_tree = -1;
-        p4est_locidx_t quadrant_id = -1;
-        p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, &which_tree, &quadrant_id);
+        p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
         particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
 
         char filename[256];
@@ -164,7 +172,52 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
     }
 }
 
+void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps) {
+    for (int step = 0; step < num_steps; ++step) {
+        // For each local quadrant (only 1 local for -n4 demo)
+        for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
+            p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
+            particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
 
+            for (int j = 0; j < buf->count; ++j) {
+                particle_t *p = &buf->particles[j];
+
+                //get old distance
+                double dx = p->x - planet_xyz[0];
+                double dy = p->y - planet_xyz[1];
+                double r = sqrt(dx*dx + dy*dy);
+
+                //current acceleration
+                double a = -grav_const * planet_mass / (r * r * r + 1e-12); //no div by 0
+                double ax = a * dx;
+                double ay = a * dy;
+
+                //new velocity
+                p->vx += ax * timestep;
+                p->vy += ay * timestep;
+
+                //new position
+                p->x += p->vx * timestep;
+                p->y += p->vy * timestep;
+
+                //check transfer
+                int new_quad = find_quad(p);
+                if (new_quad != -1 && new_quad != p->quadrant_id) {
+                   //transfer particle p to new_quad proceess
+                }
+            }
+        }
+
+        //Sync 
+        MPI_Barrier(mpi_context.mpicomm);
+
+        // print_particle_positions(p4est, mesh, mpi_context);
+    }
+}
+
+void send_particle(particle_t particle, mpi_context_t mpi_context, int rec_rank){
+    
+}
 
 void run(int argc, char **argv) {
     mpi_context_t mpi_context = mpi_init(argc, argv);
@@ -176,8 +229,10 @@ void run(int argc, char **argv) {
     p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL);
 
-    print_particle_positions(p4est, mesh, mpi_context);
-
+    //print_particle_positions(p4est, mesh, mpi_context);
+    //timestep = 0.1 -> 2 second demo -> 2 / 0.1 = 20
+    int ns = 20;
+    loop(p4est, mesh, mpi_context, ns);
 
 
     free_particles(p4est, mesh);
@@ -185,8 +240,8 @@ void run(int argc, char **argv) {
     p4est_ghost_destroy(ghost);
 
     cleanup(p4est);
-
 }
+
 int main(int argc, char **argv) {
     run(argc, argv);
     return 0;
@@ -194,8 +249,6 @@ int main(int argc, char **argv) {
 
 
 //next
-//define inital particle velocity
-//main loop--
 
 //define timestep 
 //position and velocity updates

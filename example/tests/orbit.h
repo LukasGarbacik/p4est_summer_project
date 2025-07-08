@@ -20,14 +20,17 @@ typedef struct {
 
 mpi_context_t mpi_init(int argc, char **argv);
 p4est_t * p4est_setup(mpi_context_t *mpi_context);
-void cleanup(p4est_t *p4est);
-void run(int argc, char **argv);
 
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
+int find_quad(particle_t * particle);
+
 particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
-void free_particles(p4est_t *p4est, p4est_mesh_t * mesh);
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context);
 
-int find_quad(particle_t * particle);
+void run(int argc, char **argv);
+void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps);
+
+void free_particles(p4est_t *p4est, p4est_mesh_t * mesh);
+void cleanup(p4est_t *p4est);
 
 
