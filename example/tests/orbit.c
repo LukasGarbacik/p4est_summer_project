@@ -16,6 +16,10 @@
 #define p_per_quad 5
 
 static sc_rand_state_t global_rand_state;
+static int global_mpi_rank = -1;
+
+static const double planet_xyz[2] = {.50, .50}; //one planet right at the center (0.5, 0.5)
+static const double planet_mass = 0.167;
 
 mpi_context_t mpi_init(int argc, char **argv) {
 
@@ -32,6 +36,7 @@ mpi_context_t mpi_init(int argc, char **argv) {
     sc_init (mpi_context.mpicomm, 1, 1, NULL, SC_LP_DEFAULT);
 
     global_rand_state = (uint64_t)(time(NULL) + mpi_context.mpirank);
+    global_mpi_rank = mpi_context.mpirank;
 
     return mpi_context;
 }
@@ -71,6 +76,8 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     }
     
     particle_t particle;
+
+    particle.quadrant_id = global_mpi_rank;
     
     // Add some randomness within the quadrant
     double rand_x = sc_rand(&global_rand_state) / 2;
@@ -89,10 +96,23 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
-    buf->particles = malloc(buf->count * sizeof(particle_t));
+    buf->particles = malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
     for(int i = 0; i < p_per_quad; i++){
         buf->particles[i] = particle_single_init(p4est, which_tree, quadrant);
     }
+}
+
+int find_quad(particle_t * particle){// -1 if no transfer, otherwise returns the rank of the reciving process
+    if(particle->x > 0.5 && particle->y > 0.5){
+        return (particle->quadrant_id == 3) ? -1 : 3;
+    }
+    else if(particle->y > 0.5){
+        return (particle->quadrant_id == 2) ? -1 : 2;
+    }
+    else if(particle->x > 0.5){
+        return (particle->quadrant_id == 1) ? -1 : 1;
+    }
+    return (particle->quadrant_id == 0) ? -1 : 0;
 }
 
 
@@ -136,9 +156,9 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
         
         // Print particle data for this quadrant
         for (int j = 0; j < buf->count; j++) {
-            fprintf(file, "  Particle %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f)\n", 
+            fprintf(file, "  Particle %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f) pid: %d\n", 
                    j, buf->particles[j].x, buf->particles[j].y, 
-                   buf->particles[j].vx, buf->particles[j].vy);
+                   buf->particles[j].vx, buf->particles[j].vy, buf->particles[j].quadrant_id);
         }
         fclose(file);
     }
@@ -158,7 +178,7 @@ void run(int argc, char **argv) {
 
     print_particle_positions(p4est, mesh, mpi_context);
 
-    
+
 
     free_particles(p4est, mesh);
     p4est_mesh_destroy(mesh);
@@ -174,6 +194,11 @@ int main(int argc, char **argv) {
 
 
 //next
-//define central planet
-//define particle velocities
-//main timestep loop
+//define inital particle velocity
+//main loop--
+
+//define timestep 
+//position and velocity updates
+//transfer particle to corresponding rank if outisde of bounds (run each particle through find_quad fxn)
+//define stop
+//print out data in individual rank files per timestep

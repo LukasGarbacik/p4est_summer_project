@@ -7,6 +7,7 @@ typedef struct {
 typedef struct { //simple particle struct for pos/vel
     double x, y;
     double vx, vy;
+    int quadrant_id; //same value as mpi rank
 } particle_t;
 
 typedef struct {
@@ -26,5 +27,7 @@ void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quad
 particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
 void free_particles(p4est_t *p4est, p4est_mesh_t * mesh);
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context);
+
+int find_quad(particle_t * particle);
 
 
