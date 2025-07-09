@@ -23,7 +23,7 @@ static sc_rand_state_t global_rand_state;
 static int global_mpi_rank = -1;
 
 static const double planet_xyz[2] = {.50, .50}; //one planet right at the center (0.5, 0.5)
-static const double planet_mass = 0.167;
+static const double planet_mass = 0.0167;
 
 mpi_context_t mpi_init(int argc, char **argv) {
 
@@ -83,7 +83,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 
     particle.quadrant_id = global_mpi_rank;
     
-    // Add some randomness within the quadrant
+    //random positions rand_x/y in [0, 0.5)
     double rand_x = sc_rand(&global_rand_state) / 2;
     double rand_y = sc_rand(&global_rand_state) / 2;
     
@@ -94,11 +94,11 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     double dx, dy;
     dx = particle.x - planet_xyz[0];
     dy = particle.y - planet_xyz[1];
-    double r = SC_SQR(dx*dx + dy*dy); //dist from planet
-    double v = SC_SQR(grav_const * planet_mass / r); //magnitude of velocity
+    double r = sqrt(dx*dx + dy*dy); //dist from planet
+    double v = sqrt(grav_const * planet_mass / r); //magnitude of velocity
 
     particle.vx = -v * dy / r;
-    particle.vy = -v * dx / r;
+    particle.vy = v * dx / r;
     
     return particle;
 }
@@ -106,7 +106,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
-    buf->particles = malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
+    buf->particles = (particle_t *) malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
     for(int i = 0; i < p_per_quad; i++){
         buf->particles[i] = particle_single_init(p4est, which_tree, quadrant);
     }
@@ -141,7 +141,7 @@ void free_particles(p4est_t *p4est, p4est_mesh_t * mesh) {
 
 void cleanup(p4est_t *p4est) {
     p4est_destroy(p4est);
-    sc_finalize();
+    //sc_finalize();
     sc_MPI_Finalize();
 }
 
@@ -151,7 +151,8 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
         particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
 
         char filename[256];
-        snprintf(filename, sizeof(filename), "particles_rank%d_quadrant%d.txt", mpi_context.mpirank, i);
+        snprintf(filename, sizeof(filename), "particles_rank%d_quadrant%d.txt", 
+                 mpi_context.mpirank, i);
 
         FILE *file = fopen(filename, "w");
         if (!file) {
@@ -168,6 +169,7 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
                    j, buf->particles[j].x, buf->particles[j].y, 
                    buf->particles[j].vx, buf->particles[j].vy, buf->particles[j].quadrant_id);
         }
+        fprintf(file, "\n");
         fclose(file);
     }
 }
@@ -211,7 +213,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
         //Sync 
         MPI_Barrier(mpi_context.mpicomm);
 
-        // print_particle_positions(p4est, mesh, mpi_context);
+        print_particle_positions(p4est, mesh, mpi_context, step);
     }
 }
 
@@ -229,7 +231,7 @@ void run(int argc, char **argv) {
     p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL);
 
-    //print_particle_positions(p4est, mesh, mpi_context);
+    print_particle_positions(p4est, mesh, mpi_context, 0);
     //timestep = 0.1 -> 2 second demo -> 2 / 0.1 = 20
     int ns = 20;
     loop(p4est, mesh, mpi_context, ns);
