@@ -78,6 +78,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
         xs = 0.5;
         ys = 0.5;
     }
+
     
     particle_t particle;
 
@@ -106,6 +107,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
+    buf->capacity = p_per_quad;
     buf->particles = (particle_t *) malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
     for(int i = 0; i < p_per_quad; i++){
         buf->particles[i] = particle_single_init(p4est, which_tree, quadrant);
@@ -145,20 +147,10 @@ void cleanup(p4est_t *p4est) {
     sc_MPI_Finalize();
 }
 
-void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context){
+void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file){
     for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
         p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
         particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
-
-        char filename[256];
-        snprintf(filename, sizeof(filename), "particles_rank%d_quadrant%d.txt", 
-                 mpi_context.mpirank, i);
-
-        FILE *file = fopen(filename, "w");
-        if (!file) {
-            printf("Error: Could not open file %s\n", filename);
-            continue;
-        }
         
         fprintf(file, "Rank %d: Quadrant %ld - Particles: %d\n", 
                mpi_context.mpirank, i, buf->count);
@@ -170,16 +162,51 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
                    buf->particles[j].vx, buf->particles[j].vy, buf->particles[j].quadrant_id);
         }
         fprintf(file, "\n");
-        fclose(file);
     }
 }
 
-void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps) {
+void add_particle(particle_t particle, particle_buffer_t *buffer){
+    if(buffer == NULL || buffer->particles == NULL){
+        return;  // Buffer must be pre-allocated
+    }
+    
+    // Check if we need to expand capacity
+    if(buffer->count >= buffer->capacity){
+        buffer->capacity *= 2;  // Double the capacity
+        buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
+    }
+    
+    // Add particle and increment count
+    buffer->particles[buffer->count] = particle;
+    buffer->count++;
+}
+void remove_particle(particle_buffer_t *buffer, int index){
+    if(buffer == NULL || index < 0 || index >= buffer->count){
+        return;
+    }
+    
+    // Move the last particle to this position (if not the last one)
+    if(index < buffer->count - 1){
+        buffer->particles[index] = buffer->particles[buffer->count - 1];
+        buffer->particels[buffer->count - 1] = NULL;
+    }
+    buffer->count--;
+}
+
+void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file) {
     for (int step = 0; step < num_steps; ++step) {
         // For each local quadrant (only 1 local for -n4 demo)
         for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
             p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
             particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
+            
+            //4 buffers (each one for one rank)
+            particle_buffer_t ** send_data = malloc(4 * sizeof(particle_buffer_t*));
+            for(int j = 0; j < 4; j++){
+                send_data[j] = NULL;
+            }
+
+            //initalize end pointer for particle buffer and add to conditional for loop below
 
             for (int j = 0; j < buf->count; ++j) {
                 particle_t *p = &buf->particles[j];
@@ -205,20 +232,50 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 //check transfer
                 int new_quad = find_quad(p);
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
-                   //transfer particle p to new_quad proceess
+                    //initalize outgoing buffer when particle recognized
+                    if(send_data[new_quad] == NULL){
+                        send_data[new_quad] = malloc(sizeof(particle_buffer_t));
+                        send_data[new_quad]->capacity = 10;  //Start with capacity for 10 particles
+                        send_data[new_quad]->count = 0;
+                        send_data[new_quad]->particles = malloc(send_data[new_quad]->capacity * sizeof(particle_t));
+                    }
+                    //add to outing buffer
+                    add_particle(*p, send_data[new_quad]);
+                    
+                    //remove from self buffer
+                    remove_particle(buf, j); //decremets buf->count for loop conditional
+                    j--;
                 }
             }
+
+            //mpi send particle count alone if not 0
+            //mpi send particle buffer to corresponding ranks
+
+            //mpi recieve particle counts
+            //sum particle counts and reallocate self buffer
+            //mpi recieve particle data and populate buffer
+
+            
+            //clean up individual buffers
+            for(int k = 0; k < 4; k++){
+                if(send_data[k] != NULL){
+                    free(send_data[k]->particles);
+                    free(send_data[k]);
+                }
+            }
+            free(send_data);
+            
+            // TODO: Implement MPI send/receive here
+            //send buffers non blocking
+            //recive buffers non blocking and decide to allocate/deallocate
+            //copy incoming data to buffer
         }
 
         //Sync 
         MPI_Barrier(mpi_context.mpicomm);
 
-        print_particle_positions(p4est, mesh, mpi_context, step);
+        print_particle_positions(p4est, mesh, mpi_context, file);
     }
-}
-
-void send_particle(particle_t particle, mpi_context_t mpi_context, int rec_rank){
-    
 }
 
 void run(int argc, char **argv) {
@@ -231,12 +288,21 @@ void run(int argc, char **argv) {
     p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL);
 
-    print_particle_positions(p4est, mesh, mpi_context, 0);
+    char filename[256];
+    snprintf(filename, sizeof(filename), "particles_rank%d.txt", 
+             mpi_context.mpirank);
+
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error: Could not open file %s\n", filename);
+        exit(1);
+    }
+    print_particle_positions(p4est, mesh, mpi_context, file);
     //timestep = 0.1 -> 2 second demo -> 2 / 0.1 = 20
     int ns = 20;
-    loop(p4est, mesh, mpi_context, ns);
+    loop(p4est, mesh, mpi_context, ns, file);
 
-
+    fclose(file);
     free_particles(p4est, mesh);
     p4est_mesh_destroy(mesh);
     p4est_ghost_destroy(ghost);
@@ -250,10 +316,12 @@ int main(int argc, char **argv) {
 }
 
 
-//next
+//build data structure for sending particles out
+//mpi isend number of particles to be recived to each process
+//data structure for #particles notification
+//mpirecive number of particles for each, keep a counter [0,3] 
+//reallocate array if necessecary, (if sent particles < recived particles)
+//mpi recive particle data
 
-//define timestep 
-//position and velocity updates
-//transfer particle to corresponding rank if outisde of bounds (run each particle through find_quad fxn)
-//define stop
-//print out data in individual rank files per timestep
+//work on periodic transfers later
+
