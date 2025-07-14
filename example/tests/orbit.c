@@ -287,25 +287,26 @@ void receive_particles(particle_buffer_t * new_buffer,  MPI_Request *mpi_recs, r
 
 void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_context_t *mpi_context){
     int index = 0;
-    for(int rank = 0; rank < 4; ++rank){
+    for(int rank = 0; rank < 4; rank++){
         if(rank == mpi_context->mpirank) continue;
         
         if(send_data[rank] != NULL && send_data[rank]->count > 0) {
             MPI_Isend(
                 send_data[rank]->particles,
-                send_data[rank]->count * sizeof(particle_t),
-                MPI_BYTE,
-                rank,
-                1,  // tag must match receive
-                mpi_context->mpicomm,
+                send_data[rank]->count * sizeof(particle_t),  //byte size of outgoing particle buffer
+                MPI_BYTE, 
+                rank, 
+                1,  //same tag as receieve
+                mpi_context->mpicomm, 
                 &mpi_sends[index]
             );
         } else {
-            mpi_sends[index] = MPI_REQUEST_NULL;
+            mpi_sends[index] = MPI_REQUEST_NULL;//null request to pass checker
         }
         index++;
     }
 }
+
 
 
 void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file) {
@@ -324,7 +325,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
             }
 
             //initalize end pointer for particle buffer and add to conditional for loop below
-
+            int DEBUG_PARTICLE_TRANSFER_COUNT = 0;
             for (int j = 0; j < buf->count; ++j) {
                 particle_t *p = &buf->particles[j];
 
@@ -350,6 +351,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 //check transfer
                 int new_quad = find_quad(p);
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
+                    DEBUG_PARTICLE_TRANSFER_COUNT++;
                     particle_was_transfered = true;
                     //initalize outgoing buffer when particle recognized
                     if(send_data[new_quad] == NULL){
@@ -368,33 +370,37 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
             }
             //gone through all particles at this point, send_data buffers have been completed
             
-            if(particle_was_transfered){ //do complete send
-                MPI_Request sent_promises[3];
-                MPI_Request recieved_promises[3];
+            //do count transfer no matter what
+            MPI_Request sent_promises[3];
+            MPI_Request recieved_promises[3];
 
-                received_counts rec_counts;
+            received_counts rec_counts;
 
-                receive_counts(&rec_counts, recieved_promises, &mpi_context);
+            receive_counts(&rec_counts, recieved_promises, &mpi_context);
 
-                send_counts(send_data, sent_promises, &mpi_context);
+            send_counts(send_data, sent_promises, &mpi_context);
 
-                //DEBUG
-                fprintf(file, "rec_counts: 1: %d, 2: %d, 3: %d\n", rec_counts.count1[0], rec_counts.count2[0], rec_counts.count3[0]);
+            fprintf(file, "particles exiting rank: %d = %d", mpi_context.mpirank, DEBUG_PARTICLE_TRANSFER_COUNT);
 
-                MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
-                MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
+            MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
+            MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
 
+            //always do particle communicatioin to stay in sync
+            MPI_Request particle_r_promises[3];
+            MPI_Request particle_s_promises[3];
+            
+            if(particle_was_transfered){
                 reallocate_buffer(buf, &rec_counts);
+            }
+            
+            receive_particles(buf, particle_r_promises, &rec_counts, &mpi_context);
+            send_particles(send_data, particle_s_promises, &mpi_context);
 
-
-                MPI_Request particle_r_promises[3];
-                MPI_Request particle_s_promises[3];
-                receive_particles(buf, particle_r_promises, &rec_counts, &mpi_context);
-
-                send_particles(send_data, particle_s_promises, &mpi_context);
-
-                MPI_Waitall(3, particle_r_promises, MPI_STATUSES_IGNORE);
-                MPI_Waitall(3, particle_s_promises, MPI_STATUSES_IGNORE);
+            MPI_Waitall(3, particle_r_promises, MPI_STATUSES_IGNORE);
+            MPI_Waitall(3, particle_s_promises, MPI_STATUSES_IGNORE);
+            
+            if(particle_was_transfered){
+                buf->count += rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0];
             }
             
             //clean up individual buffers
@@ -458,14 +464,4 @@ int main(int argc, char **argv) {
     run(argc, argv);
     return 0;
 }
-
-
-//build data structure for sending particles out
-//mpi isend number of particles to be recived to each process
-//data structure for #particles notification
-//mpirecive number of particles for each, keep a counter [0,3] 
-//reallocate array if necessecary, (if sent particles < recived particles)
-//mpi recive particle data
-
-//work on periodic transfers later
 
