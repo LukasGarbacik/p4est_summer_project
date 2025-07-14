@@ -13,7 +13,7 @@
 
 #include "orbit.h"
 
-#define p_per_quad 5
+#define p_per_quad 1
 
 #define grav_const 1
 
@@ -167,16 +167,14 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
 
 void add_particle(particle_t particle, particle_buffer_t *buffer){
     if(buffer == NULL || buffer->particles == NULL){
-        return;  // Buffer must be pre-allocated
+        return;
     }
     
-    // Check if we need to expand capacity
     if(buffer->count >= buffer->capacity){
         buffer->capacity *= 2;  // Double the capacity
         buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
     }
     
-    // Add particle and increment count
     buffer->particles[buffer->count] = particle;
     buffer->count++;
 }
@@ -185,12 +183,49 @@ void remove_particle(particle_buffer_t *buffer, int index){
         return;
     }
     
-    // Move the last particle to this position (if not the last one)
     if(index < buffer->count - 1){
         buffer->particles[index] = buffer->particles[buffer->count - 1];
-        buffer->particels[buffer->count - 1] = NULL;
+        memset(&buffer->particles[buffer->count - 1],/*set byte*/ 0, /*num bytes*/sizeof(particle_t));
     }
     buffer->count--;
+}
+
+//
+void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_t *mpi_context){
+    int index = 0;
+    //has access to static global_mpi_rankk
+    for(int rank = 0; rank < 4; ++rank){
+        if(rank == mpi_context->mpirank) continue;
+        int count = (data[rank] != NULL) ? data[rank]->count : 0;
+        MPI_Isend(/*Pointer to data element*/&count, 
+                /*# elements*/1, 
+                MPI_INT, 
+                /*send to */rank, 
+                /*message tag */0, 
+                mpi_context->mpicomm, 
+                /*promise MPI_Request*/&mpi_sends[index++]);
+    }
+}
+
+void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_t *mpi_context){
+    int index = 0;
+    int * count_ptrs[3];
+    count_ptrs[0] = &counts->count1;
+    count_ptrs[1] = &counts->count2;
+    count_ptrs[2] = &counts->count3;
+    for(int rank = 0; rank < 4; rank++){
+        if(mpi_context->mpirank == rank) continue;
+        MPI_Irecv(
+                count_ptrs[index],
+                1,
+                MPI_INT, 
+                rank, 
+                0,
+                mpi_context->mpicomm,
+                &mpi_recs[index]);
+        index++;
+    }
+
 }
 
 void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file) {
@@ -247,13 +282,27 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                     j--;
                 }
             }
+            //gone through all particles at this point, send_data buffers have been completed
+            
 
-            //mpi send particle count alone if not 0
-            //mpi send particle buffer to corresponding ranks
+            MPI_Request sent_promises[3];
+            MPI_Request recieved_promises[3];
 
-            //mpi recieve particle counts
-            //sum particle counts and reallocate self buffer
-            //mpi recieve particle data and populate buffer
+            received_counts rec_counts;
+
+            receive_counts(&rec_counts, recieved_promises, &mpi_context);
+
+            send_counts(send_data, sent_promises, &mpi_context);
+
+
+            MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
+            MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
+
+
+
+            //reallocate
+            fprintf(file, "send_counts: 1: %d, 2: %d, 3: %d\n", rec_counts.count1, rec_counts.count2, rec_counts.count3);
+            //send particles
 
             
             //clean up individual buffers
@@ -264,11 +313,6 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 }
             }
             free(send_data);
-            
-            // TODO: Implement MPI send/receive here
-            //send buffers non blocking
-            //recive buffers non blocking and decide to allocate/deallocate
-            //copy incoming data to buffer
         }
 
         //Sync 
