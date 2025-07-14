@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "orbit.h"
 
@@ -147,7 +148,7 @@ void cleanup(p4est_t *p4est) {
     sc_MPI_Finalize();
 }
 
-void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file){
+void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file, int ln){
     for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
         p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
         particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
@@ -157,9 +158,9 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
         
         // Print particle data for this quadrant
         for (int j = 0; j < buf->count; j++) {
-            fprintf(file, "  Particle %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f) pid: %d\n", 
+            fprintf(file, "  Particle %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f) loop #: %d\n", 
                    j, buf->particles[j].x, buf->particles[j].y, 
-                   buf->particles[j].vx, buf->particles[j].vy, buf->particles[j].quadrant_id);
+                   buf->particles[j].vx, buf->particles[j].vy, ln);
         }
         fprintf(file, "\n");
     }
@@ -210,16 +211,17 @@ void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_
 void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_t *mpi_context){
     int index = 0;
     int * count_ptrs[3];
-    count_ptrs[0] = &counts->count1;
-    count_ptrs[1] = &counts->count2;
-    count_ptrs[2] = &counts->count3;
+    count_ptrs[0] = &counts->count1[0];
+    count_ptrs[1] = &counts->count2[0];
+    count_ptrs[2] = &counts->count3[0];
     for(int rank = 0; rank < 4; rank++){
         if(mpi_context->mpirank == rank) continue;
+        count_ptrs[index][1] = rank; //save rank to order particle placement in buffer
         MPI_Irecv(
-                count_ptrs[index],
+                count_ptrs[index],  // Pass the pointer, not the dereferenced value
                 1,
                 MPI_INT, 
-                rank, 
+                /* receive rank*/rank, 
                 0,
                 mpi_context->mpicomm,
                 &mpi_recs[index]);
@@ -228,12 +230,92 @@ void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_
 
 }
 
+void reallocate_buffer(particle_buffer_t * buffer, received_counts * counts){
+    int new_total = buffer->count + counts->count1[0] + counts->count2[0] + counts->count3[0];
+    if(new_total > buffer->capacity){
+        buffer->capacity *= 2;
+        buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
+    }
+    else if(new_total < buffer->capacity / 4 && new_total > 10){ //only deallocate for higher number of particles
+        buffer->capacity /= 2;
+        buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
+    }
+}
+
+int get_prefix_helper(particle_buffer_t * buffer, received_counts * counts, int rank){//index place into buffer
+    int ret = (buffer != NULL) ? buffer->count : 0;
+    //reminder: count[1-3] holds the particle count inc. from corresponding rank: <count, inc. rank> 
+    if(counts->count1[1] == rank){
+        return ret;
+    }
+    else if(counts->count2[1] == rank){
+        return ret + counts->count1[0];
+    }
+    return ret + counts->count1[0] + counts->count2[0];
+}
+
+void receive_particles(particle_buffer_t * new_buffer,  MPI_Request *mpi_recs, received_counts *counts ,  mpi_context_t * mpi_context){
+    //loop through ranks, match
+    int index = 0;
+    for(int rank = 0; rank < 4; rank++){
+        if(rank == mpi_context->mpirank) continue;
+
+        // Find the count for this rank
+        int count = 0;
+        if (counts->count1[1] == rank) count = counts->count1[0];
+        else if (counts->count2[1] == rank) count = counts->count2[0];
+        else if (counts->count3[1] == rank) count = counts->count3[0];
+
+        if (count > 0) {
+            int prefix = get_prefix_helper(new_buffer, counts, rank);
+            MPI_Irecv(
+                &new_buffer->particles[prefix], //destination
+                count * sizeof(particle_t), //number of bytes
+                MPI_BYTE,
+                rank,
+                1, //tag
+                mpi_context->mpicomm,
+                &mpi_recs[index]
+            );
+        } else {
+            // If no particles expected, set request to MPI_REQUEST_NULL
+            mpi_recs[index] = MPI_REQUEST_NULL;
+        }
+        index++;
+    }
+}
+
+void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_context_t *mpi_context){
+    int index = 0;
+    for(int rank = 0; rank < 4; ++rank){
+        if(rank == mpi_context->mpirank) continue;
+        
+        if(send_data[rank] != NULL && send_data[rank]->count > 0) {
+            MPI_Isend(
+                send_data[rank]->particles,
+                send_data[rank]->count * sizeof(particle_t),
+                MPI_BYTE,
+                rank,
+                1,  // tag must match receive
+                mpi_context->mpicomm,
+                &mpi_sends[index]
+            );
+        } else {
+            mpi_sends[index] = MPI_REQUEST_NULL;
+        }
+        index++;
+    }
+}
+
+
 void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file) {
     for (int step = 0; step < num_steps; ++step) {
         // For each local quadrant (only 1 local for -n4 demo)
         for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
             p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
             particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
+
+            bool particle_was_transfered = false;
             
             //4 buffers (each one for one rank)
             particle_buffer_t ** send_data = malloc(4 * sizeof(particle_buffer_t*));
@@ -245,6 +327,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
 
             for (int j = 0; j < buf->count; ++j) {
                 particle_t *p = &buf->particles[j];
+
 
                 //get old distance
                 double dx = p->x - planet_xyz[0];
@@ -267,6 +350,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 //check transfer
                 int new_quad = find_quad(p);
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
+                    particle_was_transfered = true;
                     //initalize outgoing buffer when particle recognized
                     if(send_data[new_quad] == NULL){
                         send_data[new_quad] = malloc(sizeof(particle_buffer_t));
@@ -284,26 +368,34 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
             }
             //gone through all particles at this point, send_data buffers have been completed
             
+            if(particle_was_transfered){ //do complete send
+                MPI_Request sent_promises[3];
+                MPI_Request recieved_promises[3];
 
-            MPI_Request sent_promises[3];
-            MPI_Request recieved_promises[3];
+                received_counts rec_counts;
 
-            received_counts rec_counts;
+                receive_counts(&rec_counts, recieved_promises, &mpi_context);
 
-            receive_counts(&rec_counts, recieved_promises, &mpi_context);
+                send_counts(send_data, sent_promises, &mpi_context);
 
-            send_counts(send_data, sent_promises, &mpi_context);
+                //DEBUG
+                fprintf(file, "rec_counts: 1: %d, 2: %d, 3: %d\n", rec_counts.count1[0], rec_counts.count2[0], rec_counts.count3[0]);
+
+                MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
+                MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
+
+                reallocate_buffer(buf, &rec_counts);
 
 
-            MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
-            MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
+                MPI_Request particle_r_promises[3];
+                MPI_Request particle_s_promises[3];
+                receive_particles(buf, particle_r_promises, &rec_counts, &mpi_context);
 
+                send_particles(send_data, particle_s_promises, &mpi_context);
 
-
-            //reallocate
-            fprintf(file, "send_counts: 1: %d, 2: %d, 3: %d\n", rec_counts.count1, rec_counts.count2, rec_counts.count3);
-            //send particles
-
+                MPI_Waitall(3, particle_r_promises, MPI_STATUSES_IGNORE);
+                MPI_Waitall(3, particle_s_promises, MPI_STATUSES_IGNORE);
+            }
             
             //clean up individual buffers
             for(int k = 0; k < 4; k++){
@@ -318,7 +410,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
         //Sync 
         MPI_Barrier(mpi_context.mpicomm);
 
-        print_particle_positions(p4est, mesh, mpi_context, file);
+        print_particle_positions(p4est, mesh, mpi_context, file, step);
     }
 }
 
@@ -332,6 +424,14 @@ void run(int argc, char **argv) {
     p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL);
 
+    //GDB hold start for debugging (new terminal) gdb ./orbit PID
+    
+    /*if (mpi_context.mpirank == 0) { // or just always, if not using MPI
+        printf("PID %d: Press Enter to continue...\n", getpid());
+        fflush(stdout);
+        getchar();
+    }*/
+
     char filename[256];
     snprintf(filename, sizeof(filename), "particles_rank%d.txt", 
              mpi_context.mpirank);
@@ -341,9 +441,9 @@ void run(int argc, char **argv) {
         printf("Error: Could not open file %s\n", filename);
         exit(1);
     }
-    print_particle_positions(p4est, mesh, mpi_context, file);
+    print_particle_positions(p4est, mesh, mpi_context, file, 0);
     //timestep = 0.1 -> 2 second demo -> 2 / 0.1 = 20
-    int ns = 20;
+    int ns = 200;
     loop(p4est, mesh, mpi_context, ns, file);
 
     fclose(file);

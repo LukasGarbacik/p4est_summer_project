@@ -17,9 +17,9 @@ typedef struct {
 } particle_buffer_t;
 
 typedef struct { //use as prefix indexes for the prebuffer array and reallocation
-    int count1; //lowest rank to highest
-    int count2;
-    int count3;
+    int count1[2]; //lowest rank to highest
+    int count2[2]; //first slot is the count, second slot is the rank filled in to access w/ particles
+    int count3[2];
 } received_counts;
 
 
@@ -32,7 +32,7 @@ void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quad
 int find_quad(particle_t * particle);
 
 particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
-void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file);
+void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file, int ln);
 
 void run(int argc, char **argv);
 void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file);
@@ -48,3 +48,7 @@ void remove_particle(particle_buffer_t *buffer, int index);
 void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_t *mpi_context);
 void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_t *mpi_context);
 
+void reallocate_buffer(particle_buffer_t * buffer, received_counts * counts);
+
+void receive_particles(particle_buffer_t * new_buffer, MPI_Request *mpi_recs, received_counts *counts ,  mpi_context_t * mpi_context);
+void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_context_t *mpi_context);
