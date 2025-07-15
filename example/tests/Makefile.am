@@ -9,6 +9,11 @@ bin_PROGRAMS += example/tests/working
 ## Define the source file for the 'working' program.
 example_tests_working_SOURCES = example/tests/working.c
 
+##define 3d orbit demo
+
+bin_PROGRAMS += example/tests/orbit3d
+example_tests_orbit3d_SOURCES = example/tests/orbit3d.c
+
 endif
 
 ## does not require the 3d stuff at all

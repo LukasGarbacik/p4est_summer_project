@@ -49,6 +49,7 @@ void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_
 void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_t *mpi_context);
 
 void reallocate_buffer(particle_buffer_t * buffer, received_counts * counts);
+int get_prefix_helper(particle_buffer_t * buffer, received_counts * counts, int rank);
 
 void receive_particles(particle_buffer_t * new_buffer, MPI_Request *mpi_recs, received_counts *counts ,  mpi_context_t * mpi_context);
 void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_context_t *mpi_context);

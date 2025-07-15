@@ -15,7 +15,7 @@
 
 #include "orbit.h"
 
-#define p_per_quad 5
+#define p_per_quad 1
 
 #define grav_const 1
 
@@ -106,24 +106,6 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     return particle;
 }
 
-/*void check_and_fix_periodic(particle_t * particle){
-    bool fixed = false;
-    if (particle->x < 0 || particle->x >= 1 || particle->y < 0 || particle->y >= 1) {
-        fixed = true;
-        //180 degree rotation formula
-        particle->x = 1.0 - particle->x;
-        particle->y = 1.0 - particle->y;
-        //fix domin to unit square
-        if (particle->x < 0) particle->x += 1.0;
-        if (particle->x >= 1) particle->x -= 1.0;
-        if (particle->y < 0) particle->y += 1.0;
-        if (particle->y >= 1) particle->y -= 1.0;
-    }
-    if (fixed) {
-        particle->vx = -particle->vx;
-        particle->vy = -particle->vy;
-    }
-}*/
 void check_and_fix_periodic(particle_t * particle){
     if(particle->x < 0){
         particle->x = 1 - fabs(particle->x);
