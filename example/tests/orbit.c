@@ -11,10 +11,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "orbit.h"
 
-#define p_per_quad 1
+#define p_per_quad 5
 
 #define grav_const 1
 
@@ -105,7 +106,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     return particle;
 }
 
-void check_and_fix_periodic(particle_t * particle){
+/*void check_and_fix_periodic(particle_t * particle){
     bool fixed = false;
     if (particle->x < 0 || particle->x >= 1 || particle->y < 0 || particle->y >= 1) {
         fixed = true;
@@ -121,6 +122,32 @@ void check_and_fix_periodic(particle_t * particle){
     if (fixed) {
         particle->vx = -particle->vx;
         particle->vy = -particle->vy;
+    }
+}*/
+void check_and_fix_periodic(particle_t * particle){
+    if(particle->x < 0){
+        particle->x = 1 - fabs(particle->x);
+        particle->y = 1 - particle->y;
+
+        particle->vy = -particle->vy; //vy flipped
+    }
+    else if(particle->x > 1){
+        particle->x = particle->x - 1;
+        particle->y = 1 - particle->y;
+
+        particle->vy = -particle->vy; //vy flipped
+    }
+    else if(particle->y < 0){
+        particle->x = 1 - particle->x;
+        particle->y = 1 - fabs(particle->y);
+
+        particle->vx = -particle->vx; //vx flipped
+    }
+    else if(particle->y > 1){
+        particle->x = 1 - particle->x;
+        particle->y = particle->y - 1;
+
+        particle->vx = -particle->vx; //vx flipped
     }
 }
 
@@ -189,7 +216,9 @@ void add_particle(particle_t particle, particle_buffer_t *buffer){
     if(buffer == NULL || buffer->particles == NULL){
         return;
     }
-    
+    if(global_mpi_rank == 0){
+        printf("this is where the particle is getting added to an outgoing buffer. self-rank: %d\n\n", global_mpi_rank);
+    }
     if(buffer->count >= buffer->capacity){
         buffer->capacity *= 2;  // Double the capacity
         buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
@@ -198,12 +227,19 @@ void add_particle(particle_t particle, particle_buffer_t *buffer){
     buffer->particles[buffer->count] = particle;
     buffer->count++;
 }
-void remove_particle(particle_buffer_t *buffer, int index){
+void remove_particle(particle_buffer_t *buffer, int index, int ln){
     if(buffer == NULL || index < 0 || index >= buffer->count){
         return;
     }
+    if(global_mpi_rank == 0){
+        printf("particle is getting removed from outgoing ranks self buffer. self-rank: %d\n\n", global_mpi_rank);
+        printf("particle pos(%3f, %3f) pid: %d, loop number: %d\n\n", buffer->particles[index].x, buffer->particles[index].y, buffer->particles[index].quadrant_id, ln);
+        printf("buffer_count: %d, arg index: %d\n", buffer->count, index);
+        printf("HERE^^\n");
+    }
     
-    if(index < buffer->count - 1){
+    if(index < buffer->count){
+        if(global_mpi_rank == 0) printf("GOT HERE\n");
         buffer->particles[index] = buffer->particles[buffer->count - 1];
         memset(&buffer->particles[buffer->count - 1],/*set byte*/ 0, /*num bytes*/sizeof(particle_t));
     }
@@ -217,6 +253,9 @@ void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_
     for(int rank = 0; rank < 4; ++rank){
         if(rank == mpi_context->mpirank) continue;
         int count = (data[rank] != NULL) ? data[rank]->count : 0;
+        if(count != 0 && global_mpi_rank == 0){
+            printf("COUNT OF PARTICLES SENT TO RANK: %d = %d", rank, count);
+        }
         MPI_Isend(/*Pointer to data element*/&count, 
                 /*# elements*/1, 
                 MPI_INT, 
@@ -237,7 +276,7 @@ void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_
         if(mpi_context->mpirank == rank) continue;
         count_ptrs[index][1] = rank; //save rank to order particle placement in buffer
         MPI_Irecv(
-                count_ptrs[index],  // Pass the pointer, not the dereferenced value
+                count_ptrs[index],  //pass the pointer
                 1,
                 MPI_INT, 
                 /* receive rank*/rank, 
@@ -251,6 +290,7 @@ void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_
 
 void reallocate_buffer(particle_buffer_t * buffer, received_counts * counts){
     int new_total = buffer->count + counts->count1[0] + counts->count2[0] + counts->count3[0];
+    if(global_mpi_rank == 0) printf("reallocation: new_total: %d, buf cap: %d", new_total, buffer->capacity);
     if(new_total > buffer->capacity){
         buffer->capacity *= 2;
         buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
@@ -284,6 +324,8 @@ void receive_particles(particle_buffer_t * new_buffer,  MPI_Request *mpi_recs, r
         if (counts->count1[1] == rank) count = counts->count1[0];
         else if (counts->count2[1] == rank) count = counts->count2[0];
         else if (counts->count3[1] == rank) count = counts->count3[0];
+
+        if(global_mpi_rank == 1 && count > 0) printf("rank 1 receiving particle here");
 
         if (count > 0) {
             int prefix = get_prefix_helper(new_buffer, counts, rank);
@@ -371,7 +413,11 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 int new_quad = find_quad(p);
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
                     DEBUG_PARTICLE_TRANSFER_COUNT++;
-                    particle_was_transfered = true;
+
+                    if (mpi_context.mpirank == 0) {
+                        printf("[SEND] Rank 0 sending particle to rank %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f), pid=%d, loop=%d\n",
+                            new_quad, p->x, p->y, p->vx, p->vy, p->quadrant_id, step);
+                    }
                     p->quadrant_id = new_quad;
                     //initalize outgoing buffer when particle recognized
                     if(send_data[new_quad] == NULL){
@@ -384,7 +430,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                     add_particle(*p, send_data[new_quad]);
                     
                     //remove from self buffer
-                    remove_particle(buf, j); //decremets buf->count for loop conditional
+                    remove_particle(buf, j, step); //decremets buf->count for loop conditional
                     j--;
                 }
             }
@@ -404,6 +450,15 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
 
             MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
             MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
+            if(rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0] > 0 && global_mpi_rank == 1){
+                printf("Rank %d received counts: [%d from %d] [%d from %d] [%d from %d]\n",
+                    mpi_context.mpirank,
+                    rec_counts.count1[0], rec_counts.count1[1],
+                    rec_counts.count2[0], rec_counts.count2[1],
+                    rec_counts.count3[0], rec_counts.count3[1]);
+            }
+            
+            particle_was_transfered = (rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0] > 0) ? true : false;
 
             //always do particle communicatioin to stay in sync
             MPI_Request particle_r_promises[3];
@@ -421,6 +476,16 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
             
             if(particle_was_transfered){
                 buf->count += rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0];
+            }
+
+            // Print received particles for rank 1
+            if (mpi_context.mpirank == 1 && particle_was_transfered) {
+                for (int k = 0; k < buf->count; ++k) {
+                    particle_t *recv_p = &buf->particles[k];
+                    printf("[RECV] Rank 1 new buffer particle (%d): pos=(%.6f, %.6f), vel=(%.6f, %.6f), pid=%d, loop=%d\n",
+                        k, recv_p->x, recv_p->y, recv_p->vx, recv_p->vy, recv_p->quadrant_id, step);
+                    printf("buffer info after send// count: %d, capacity: %d", buf->count, buf->capacity);
+                }
             }
             
             //clean up individual buffers

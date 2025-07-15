@@ -43,7 +43,7 @@ void cleanup(p4est_t *p4est);
 
 //pre send
 void add_particle(particle_t particle, particle_buffer_t *buffer);
-void remove_particle(particle_buffer_t *buffer, int index);
+void remove_particle(particle_buffer_t *buffer, int index, int ln);
 
 void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_t *mpi_context);
 void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_t *mpi_context);
