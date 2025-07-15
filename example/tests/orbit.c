@@ -105,6 +105,25 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
     return particle;
 }
 
+void check_and_fix_periodic(particle_t * particle){
+    bool fixed = false;
+    if (particle->x < 0 || particle->x >= 1 || particle->y < 0 || particle->y >= 1) {
+        fixed = true;
+        //180 degree rotation formula
+        particle->x = 1.0 - particle->x;
+        particle->y = 1.0 - particle->y;
+        //fix domin to unit square
+        if (particle->x < 0) particle->x += 1.0;
+        if (particle->x >= 1) particle->x -= 1.0;
+        if (particle->y < 0) particle->y += 1.0;
+        if (particle->y >= 1) particle->y -= 1.0;
+    }
+    if (fixed) {
+        particle->vx = -particle->vx;
+        particle->vy = -particle->vy;
+    }
+}
+
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
@@ -116,16 +135,16 @@ void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quad
 }
 
 int find_quad(particle_t * particle){// -1 if no transfer, otherwise returns the rank of the reciving process
-    if(particle->x > 0.5 && particle->y > 0.5){
-        return (particle->quadrant_id == 3) ? -1 : 3;
-    }
-    else if(particle->y > 0.5){
-        return (particle->quadrant_id == 2) ? -1 : 2;
-    }
-    else if(particle->x > 0.5){
-        return (particle->quadrant_id == 1) ? -1 : 1;
-    }
-    return (particle->quadrant_id == 0) ? -1 : 0;
+    //consider periodic movement and correct if necessary
+    check_and_fix_periodic(particle);
+
+    int quad = 0;
+    if (particle->x > 0.5 && particle->y > 0.5) quad = 3;
+    else if (particle->y > 0.5) quad = 2;
+    else if (particle->x > 0.5) quad = 1;
+    else quad = 0;
+
+    return (quad == particle->quadrant_id) ? -1 : quad;
 }
 
 
@@ -353,6 +372,7 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
                     DEBUG_PARTICLE_TRANSFER_COUNT++;
                     particle_was_transfered = true;
+                    p->quadrant_id = new_quad;
                     //initalize outgoing buffer when particle recognized
                     if(send_data[new_quad] == NULL){
                         send_data[new_quad] = malloc(sizeof(particle_buffer_t));
