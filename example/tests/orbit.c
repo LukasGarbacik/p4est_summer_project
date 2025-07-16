@@ -12,14 +12,18 @@
 #include <time.h>
 #include <stdbool.h>
 #include <math.h>
+#include <p4est_vtk.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "orbit.h"
 
-#define p_per_quad 1
+#define p_per_quad 30
 
-#define grav_const 1
+#define grav_const 1 
 
-#define timestep 0.1
+#define timestep 0.1 //seconds
+
 
 static sc_rand_state_t global_rand_state;
 static int global_mpi_rank = -1;
@@ -136,7 +140,7 @@ void check_and_fix_periodic(particle_t * particle){
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant){
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
-    buf->capacity = p_per_quad;
+    buf->capacity = (p_per_quad > 100) ? 1.2 * p_per_quad : 3 * p_per_quad;
     buf->particles = (particle_t *) malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
     for(int i = 0; i < p_per_quad; i++){
         buf->particles[i] = particle_single_init(p4est, which_tree, quadrant);
@@ -175,7 +179,7 @@ void cleanup(p4est_t *p4est) {
     //sc_finalize();
     sc_MPI_Finalize();
 }
-
+/*
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file, int ln){
     for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
         p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, i, NULL, NULL);
@@ -193,13 +197,144 @@ void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_
         fprintf(file, "\n");
     }
 }
+*/
+
+//Vtk format particle output
+void write_particles_vtk(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int step, const char *output_dir) {
+    char vtk_filename[256];
+    snprintf(vtk_filename, sizeof(vtk_filename), "%s/particles_rank%d_step%d.vtk", output_dir, mpi_context.mpirank, step);
+
+    FILE *f = fopen(vtk_filename, "w");
+    if (!f) {
+        printf("Error opening %s\n", vtk_filename);
+        return;
+    }
+
+    p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, 0, NULL, NULL);
+    particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
+    int total_particles = buf->count;
+
+    fprintf(f, "# vtk DataFile Version 3.0\nParticles\nASCII\nDATASET POLYDATA\n");
+    fprintf(f, "POINTS %d float\n", total_particles);
+    for (int j = 0; j < buf->count; ++j) {
+        fprintf(f, "%f %f 0.0\n", buf->particles[j].x, buf->particles[j].y);
+    }
+    fprintf(f, "VERTICES %d %d\n", total_particles, 2 * total_particles);
+    for (int j = 0; j < total_particles; ++j) {
+        fprintf(f, "1 %d\n", j);
+    }
+    fprintf(f, "POINT_DATA %d\n", total_particles);
+    fprintf(f, "VECTORS velocity float\n");
+    for (int j = 0; j < buf->count; ++j) {
+        fprintf(f, "%f %f 0.0\n", buf->particles[j].vx, buf->particles[j].vy);
+    }
+    fclose(f);
+}
+
+/*
+//VTU format particle output (better for parallel visualization)
+void write_particles_vtu(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int step, const char *output_dir) {
+    char vtu_filename[256];
+    snprintf(vtu_filename, sizeof(vtu_filename), "%s/particles_rank%d_step%d.vtu", output_dir, mpi_context.mpirank, step);
+
+    FILE *f = fopen(vtu_filename, "w");
+    if (!f) {
+        printf("Error opening %s\n", vtu_filename);
+        return;
+    }
+
+    p4est_quadrant_t *quad = p4est_mesh_quadrant_cumulative(p4est, mesh, 0, NULL, NULL);
+    particle_buffer_t *buf = (particle_buffer_t *) quad->p.user_data;
+    int total_particles = buf->count;
+
+    // Write VTU header
+    fprintf(f, "<?xml version=\"1.0\"?>\n");
+    fprintf(f, "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
+    fprintf(f, "  <UnstructuredGrid>\n");
+    fprintf(f, "    <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", total_particles, total_particles);
+    
+    // Write points
+    fprintf(f, "      <Points>\n");
+    fprintf(f, "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
+    for (int j = 0; j < buf->count; ++j) {
+        fprintf(f, "          %f %f 0.0\n", buf->particles[j].x, buf->particles[j].y);
+    }
+    fprintf(f, "        </DataArray>\n");
+    fprintf(f, "      </Points>\n");
+    
+    // Write cells (each particle is a vertex)
+    fprintf(f, "      <Cells>\n");
+    fprintf(f, "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n");
+    for (int j = 0; j < total_particles; ++j) {
+        fprintf(f, "          %d\n", j);
+    }
+    fprintf(f, "        </DataArray>\n");
+    fprintf(f, "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n");
+    for (int j = 0; j < total_particles; ++j) {
+        fprintf(f, "          %d\n", j + 1);
+    }
+    fprintf(f, "        </DataArray>\n");
+    fprintf(f, "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n");
+    for (int j = 0; j < total_particles; ++j) {
+        fprintf(f, "          1\n"); // VTK_VERTEX = 1
+    }
+    fprintf(f, "        </DataArray>\n");
+    fprintf(f, "      </Cells>\n");
+    
+    // Write point data (velocity)
+    fprintf(f, "      <PointData>\n");
+    fprintf(f, "        <DataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"3\" format=\"ascii\">\n");
+    for (int j = 0; j < buf->count; ++j) {
+        fprintf(f, "          %f %f 0.0\n", buf->particles[j].vx, buf->particles[j].vy);
+    }
+    fprintf(f, "        </DataArray>\n");
+    fprintf(f, "      </PointData>\n");
+    
+    // Close VTU file
+    fprintf(f, "    </Piece>\n");
+    fprintf(f, "  </UnstructuredGrid>\n");
+    fprintf(f, "</VTKFile>\n");
+    fclose(f);
+    
+    // Create PVTU master file (only rank 0)
+    if (mpi_context.mpirank == 0) {
+        char pvtu_filename[256];
+        snprintf(pvtu_filename, sizeof(pvtu_filename), "%s/particles_step%d.pvtu", output_dir, step);
+        
+        FILE *pvtu = fopen(pvtu_filename, "w");
+        if (pvtu) {
+            fprintf(pvtu, "<?xml version=\"1.0\"?>\n");
+            fprintf(pvtu, "<VTKFile type=\"PUnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
+            fprintf(pvtu, "  <PUnstructuredGrid GhostLevel=\"0\">\n");
+            fprintf(pvtu, "    <PPoints>\n");
+            fprintf(pvtu, "      <PDataArray type=\"Float32\" NumberOfComponents=\"3\"/>\n");
+            fprintf(pvtu, "    </PPoints>\n");
+            fprintf(pvtu, "    <PCells>\n");
+            fprintf(pvtu, "      <PDataArray type=\"Int32\" Name=\"connectivity\"/>\n");
+            fprintf(pvtu, "      <PDataArray type=\"Int32\" Name=\"offsets\"/>\n");
+            fprintf(pvtu, "      <PDataArray type=\"UInt8\" Name=\"types\"/>\n");
+            fprintf(pvtu, "    </PCells>\n");
+            fprintf(pvtu, "    <PPointData>\n");
+            fprintf(pvtu, "      <PDataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"3\"/>\n");
+            fprintf(pvtu, "    </PPointData>\n");
+            
+            // Reference all VTU files
+            for (int rank = 0; rank < 4; ++rank) {
+                fprintf(pvtu, "    <Piece Source=\"particle_output_rank%d/particles_rank%d_step%d.vtu\"/>\n", 
+                       rank, rank, step);
+            }
+            
+            fprintf(pvtu, "  </PUnstructuredGrid>\n");
+            fprintf(pvtu, "</VTKFile>\n");
+            fclose(pvtu);
+        }
+    }
+}
+*/
 
 void add_particle(particle_t particle, particle_buffer_t *buffer){
     if(buffer == NULL || buffer->particles == NULL){
         return;
-    }
-    if(global_mpi_rank == 0){
-        printf("this is where the particle is getting added to an outgoing buffer. self-rank: %d\n\n", global_mpi_rank);
     }
     if(buffer->count >= buffer->capacity){
         buffer->capacity *= 2;  // Double the capacity
@@ -213,15 +348,8 @@ void remove_particle(particle_buffer_t *buffer, int index, int ln){
     if(buffer == NULL || index < 0 || index >= buffer->count){
         return;
     }
-    if(global_mpi_rank == 0){
-        printf("particle is getting removed from outgoing ranks self buffer. self-rank: %d\n\n", global_mpi_rank);
-        printf("particle pos(%3f, %3f) pid: %d, loop number: %d\n\n", buffer->particles[index].x, buffer->particles[index].y, buffer->particles[index].quadrant_id, ln);
-        printf("buffer_count: %d, arg index: %d\n", buffer->count, index);
-        printf("HERE^^\n");
-    }
-    
+
     if(index < buffer->count){
-        if(global_mpi_rank == 0) printf("GOT HERE\n");
         buffer->particles[index] = buffer->particles[buffer->count - 1];
         memset(&buffer->particles[buffer->count - 1],/*set byte*/ 0, /*num bytes*/sizeof(particle_t));
     }
@@ -235,9 +363,6 @@ void send_counts(particle_buffer_t ** data, MPI_Request *mpi_sends, mpi_context_
     for(int rank = 0; rank < 4; ++rank){
         if(rank == mpi_context->mpirank) continue;
         int count = (data[rank] != NULL) ? data[rank]->count : 0;
-        if(count != 0 && global_mpi_rank == 0){
-            printf("COUNT OF PARTICLES SENT TO RANK: %d = %d", rank, count);
-        }
         MPI_Isend(/*Pointer to data element*/&count, 
                 /*# elements*/1, 
                 MPI_INT, 
@@ -272,7 +397,6 @@ void receive_counts(received_counts *counts, MPI_Request *mpi_recs, mpi_context_
 
 void reallocate_buffer(particle_buffer_t * buffer, received_counts * counts){
     int new_total = buffer->count + counts->count1[0] + counts->count2[0] + counts->count3[0];
-    if(global_mpi_rank == 0) printf("reallocation: new_total: %d, buf cap: %d", new_total, buffer->capacity);
     if(new_total > buffer->capacity){
         buffer->capacity *= 2;
         buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
@@ -307,7 +431,6 @@ void receive_particles(particle_buffer_t * new_buffer,  MPI_Request *mpi_recs, r
         else if (counts->count2[1] == rank) count = counts->count2[0];
         else if (counts->count3[1] == rank) count = counts->count3[0];
 
-        if(global_mpi_rank == 1 && count > 0) printf("rank 1 receiving particle here");
 
         if (count > 0) {
             int prefix = get_prefix_helper(new_buffer, counts, rank);
@@ -352,7 +475,7 @@ void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_
 
 
 
-void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file) {
+void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, const char *output_dir) {
     for (int step = 0; step < num_steps; ++step) {
         // For each local quadrant (only 1 local for -n4 demo)
         for (p4est_locidx_t i = 0; i < mesh->local_num_quadrants; ++i) {
@@ -395,11 +518,6 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 int new_quad = find_quad(p);
                 if (new_quad != -1 && new_quad != p->quadrant_id) {
                     DEBUG_PARTICLE_TRANSFER_COUNT++;
-
-                    if (mpi_context.mpirank == 0) {
-                        printf("[SEND] Rank 0 sending particle to rank %d: pos=(%.6f, %.6f), vel=(%.6f, %.6f), pid=%d, loop=%d\n",
-                            new_quad, p->x, p->y, p->vx, p->vy, p->quadrant_id, step);
-                    }
                     p->quadrant_id = new_quad;
                     //initalize outgoing buffer when particle recognized
                     if(send_data[new_quad] == NULL){
@@ -428,18 +546,9 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
 
             send_counts(send_data, sent_promises, &mpi_context);
 
-            fprintf(file, "particles exiting rank: %d = %d", mpi_context.mpirank, DEBUG_PARTICLE_TRANSFER_COUNT);
 
             MPI_Waitall(3, recieved_promises, MPI_STATUSES_IGNORE);
             MPI_Waitall(3, sent_promises, MPI_STATUSES_IGNORE);
-            if(rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0] > 0 && global_mpi_rank == 1){
-                printf("Rank %d received counts: [%d from %d] [%d from %d] [%d from %d]\n",
-                    mpi_context.mpirank,
-                    rec_counts.count1[0], rec_counts.count1[1],
-                    rec_counts.count2[0], rec_counts.count2[1],
-                    rec_counts.count3[0], rec_counts.count3[1]);
-            }
-            
             particle_was_transfered = (rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0] > 0) ? true : false;
 
             //always do particle communicatioin to stay in sync
@@ -460,15 +569,6 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
                 buf->count += rec_counts.count1[0] + rec_counts.count2[0] + rec_counts.count3[0];
             }
 
-            // Print received particles for rank 1
-            if (mpi_context.mpirank == 1 && particle_was_transfered) {
-                for (int k = 0; k < buf->count; ++k) {
-                    particle_t *recv_p = &buf->particles[k];
-                    printf("[RECV] Rank 1 new buffer particle (%d): pos=(%.6f, %.6f), vel=(%.6f, %.6f), pid=%d, loop=%d\n",
-                        k, recv_p->x, recv_p->y, recv_p->vx, recv_p->vy, recv_p->quadrant_id, step);
-                    printf("buffer info after send// count: %d, capacity: %d", buf->count, buf->capacity);
-                }
-            }
             
             //clean up individual buffers
             for(int k = 0; k < 4; k++){
@@ -483,7 +583,8 @@ void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num
         //Sync 
         MPI_Barrier(mpi_context.mpicomm);
 
-        print_particle_positions(p4est, mesh, mpi_context, file, step);
+        write_particles_vtk(p4est, mesh, mpi_context, step, output_dir);
+        //write_particles_vtu(p4est, mesh, mpi_context, step, output_dir);
     }
 }
 
@@ -497,29 +598,15 @@ void run(int argc, char **argv) {
     p4est_ghost_t *ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     p4est_mesh_t *mesh = p4est_mesh_new(p4est, ghost, P4EST_CONNECT_FULL);
 
-    //GDB hold start for debugging (new terminal) gdb ./orbit PID
-    
-    /*if (mpi_context.mpirank == 0) { // or just always, if not using MPI
-        printf("PID %d: Press Enter to continue...\n", getpid());
-        fflush(stdout);
-        getchar();
-    }*/
+    //vtk output directory for each rank
+    char output_dir[256];
+    snprintf(output_dir, sizeof(output_dir), "particle_output_rank%d", mpi_context.mpirank);
+    mkdir(output_dir, 0777); //full permissions
 
-    char filename[256];
-    snprintf(filename, sizeof(filename), "particles_rank%d.txt", 
-             mpi_context.mpirank);
+    int num_steps = 200;
 
-    FILE *file = fopen(filename, "w");
-    if (!file) {
-        printf("Error: Could not open file %s\n", filename);
-        exit(1);
-    }
-    print_particle_positions(p4est, mesh, mpi_context, file, 0);
-    //timestep = 0.1 -> 2 second demo -> 2 / 0.1 = 20
-    int ns = 200;
-    loop(p4est, mesh, mpi_context, ns, file);
+    loop(p4est, mesh, mpi_context, num_steps, output_dir);
 
-    fclose(file);
     free_particles(p4est, mesh);
     p4est_mesh_destroy(mesh);
     p4est_ghost_destroy(ghost);
@@ -531,4 +618,3 @@ int main(int argc, char **argv) {
     run(argc, argv);
     return 0;
 }
-

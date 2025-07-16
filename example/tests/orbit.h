@@ -35,7 +35,7 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file, int ln);
 
 void run(int argc, char **argv);
-void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, FILE *file);
+void loop(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int num_steps, const char *output_dir);
 
 void free_particles(p4est_t *p4est, p4est_mesh_t * mesh);
 void cleanup(p4est_t *p4est);
@@ -53,3 +53,6 @@ int get_prefix_helper(particle_buffer_t * buffer, received_counts * counts, int 
 
 void receive_particles(particle_buffer_t * new_buffer, MPI_Request *mpi_recs, received_counts *counts ,  mpi_context_t * mpi_context);
 void send_particles(particle_buffer_t ** send_data, MPI_Request *mpi_sends, mpi_context_t *mpi_context);
+
+void write_particles_vtk(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int step, const char *output_dir);
+//void write_particles_vtu(p4est_t *p4est, p4est_mesh_t *mesh, mpi_context_t mpi_context, int step, const char *output_dir);
