@@ -18,7 +18,7 @@
 
 #include "orbit.h"
 
-#define p_per_quad 30
+#define p_per_quad 50000
 
 #define grav_const 1 
 
@@ -111,29 +111,25 @@ particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est
 }
 
 void check_and_fix_periodic(particle_t * particle){
-    if(particle->x < 0){
-        particle->x = 1 - fabs(particle->x);
-        particle->y = 1 - particle->y;
+    if(
+        particle->x > 1 ||
+        particle->x < 0 ||
+        particle->y > 1 || 
+        particle->y < 0
+    ){  
+        particle->x = fmod(particle->x + 1.0, 1.0);
+        particle->y = fmod(particle->y + 1.0, 1.0);
 
-        particle->vy = -particle->vy; //vy flipped
-    }
-    else if(particle->x > 1){
-        particle->x = particle->x - 1;
-        particle->y = 1 - particle->y;
 
-        particle->vy = -particle->vy; //vy flipped
-    }
-    else if(particle->y < 0){
-        particle->x = 1 - particle->x;
-        particle->y = 1 - fabs(particle->y);
+        //retangitize the velocity to the planet
+        double dx, dy;
+        dx = particle->x - planet_xyz[0];
+        dy = particle->y - planet_xyz[1];
+        double r = sqrt(dx*dx + dy*dy); //dist from planet
+        double v = sqrt(grav_const * planet_mass / r); //magnitude of velocity
 
-        particle->vx = -particle->vx; //vx flipped
-    }
-    else if(particle->y > 1){
-        particle->x = 1 - particle->x;
-        particle->y = particle->y - 1;
-
-        particle->vx = -particle->vx; //vx flipped
+        particle->vx = -v * dy / r;
+        particle->vy = v * dx / r;
     }
 }
 
