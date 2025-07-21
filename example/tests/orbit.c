@@ -18,7 +18,7 @@
 
 #include "orbit.h"
 
-#define p_per_quad 50000
+#define p_per_quad 25
 
 #define grav_const 1 
 
