@@ -2,16 +2,19 @@
 
 #include <p8est_bits.h>
 #include <p8est_extended.h>
+#include <p8est_connectivity.h>
+#include <p8est_geometry.h>
 #include <p8est_vtk.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <sc_random.h>
 
-typdef struct {
+typedef struct {
     double x_min, x_max;
-    double y_min, z_max;
+    double y_min, y_max;
     double z_min, z_max;
-
-} octant_bounds;
+    double side_length;
+} octant_bounds_t;
 
 typedef struct {
   sc_MPI_Comm         mpicomm;
@@ -31,6 +34,11 @@ typedef struct {
     int count;
 } particle_buffer_t;
 
+typedef struct {
+    octant_bounds_t * bounds; //fill subdomain
+    particle_buffer_t * buffer; //octant-local particles 
+    int octant_id;
+} octant_data_t;
 
 //global struct holding static data (read only)
 typedef struct {
@@ -44,27 +52,24 @@ typedef struct {
 
     int ppq; //particles per quadrant 
 
+    double planet_xyz[3];
+    double planet_mass;
 
-    //octant array (abstract a level for buffers and subdomains)
-    
-
-
+    octant_data_t ** local_octants;
+    int num_octants;
 } local_data_t;
 
 
 
 //octant struct to hold dynamic data
 
-typedef struct {
-    octant_bounds * bounds; //fill subdomain
-    particle_buffer_t * buffer; //octant-local particles 
-} octant_data_t;
 
 //funciton headers
 
-mpi_context_t mpi_init(int argc, char **argv, local_data_t * data);
-p8est_t * p8est_setup(local_data_t * data);
-void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octant, void *user);
+void mpi_set(int argc, char **argv, local_data_t * data);
+void p8est_setup(local_data_t * data);
+void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octant);
+void pointers_init(local_data_t * data);
 
 
 /*

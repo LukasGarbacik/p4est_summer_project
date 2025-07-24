@@ -31,7 +31,7 @@ p4est_t * p4est_setup(mpi_context_t *mpi_context);
 void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
 int find_quad(particle_t * particle);
 
-particle_t particle_single_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quadrant);
+particle_t particle_single_init(p4est_quadrant_t *quadrant);
 void print_particle_positions(p4est_t * p4est, p4est_mesh_t * mesh, mpi_context_t mpi_context, FILE *file, int ln);
 
 void run(int argc, char **argv);
