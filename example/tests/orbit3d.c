@@ -1,22 +1,26 @@
 #include "orbit3d.h"
 
 void free_particle_data(local_data_t * g){
-    for(int i = 0; i < g->num_octants; i++){
-        if (g->local_octants[i] && g->local_octants[i]->buffer) {
-            free(g->local_octants[i]->buffer->particles);
-            g->local_octants[i]->buffer->particles = NULL;
-        }
-        if(g->local_octants[i]){
-            free(g->local_octants[i]->buffer);
-            free(g->local_octants[i]->bounds);
+    //frees needed on-
+    //actual particle buffer in buffer struct per octant
+    //buffer itself
+    //bounds
 
-            g->local_octants[i]->buffer = NULL;
-            g->local_octants[i]->bounds = NULL;
-        }
-    }
-    free(g->local_octants);
+    //octant id and octant data struct are allocated by p4est
 }
+void cleanup(local_data_t * g){
+    free_particle_data(g);
+    p8est_mesh_destroy(g->mesh);
+    p8est_ghost_destroy(g->ghost);
+    p8est_destroy(g->p8est);
+    p8est_connectivity_destroy(g->connectivity);
+    //sc_finalize();
+    
+    sc_MPI_Barrier(g->mpi->mpicomm);
 
+    int mpiret = sc_MPI_Finalize();
+    SC_CHECK_MPI(mpiret);
+}
 void mpi_set(int argc, char **argv, local_data_t * data) {
 
     int mpiret = sc_MPI_Init(&argc, &argv);
@@ -45,17 +49,9 @@ void p8est_setup(local_data_t * data){
     data->p8est->user_pointer = data; //allow defined callbacks to access global pointer
 }
 
-void pointers_init(local_data_t * g){
-    g->local_octants = (octant_data_t **) malloc(g->p8est->local_num_quadrants * sizeof(octant_data_t *));
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        g->local_octants[i] = NULL;
-    }
-}
-
 void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quadrant_t *octant){
     octant_data_t *data = (octant_data_t *) octant->p.user_data;
 
-    int level = octant->level;
     int x = octant->x;
     int y = octant->y;
     int z = octant->z;
@@ -63,9 +59,21 @@ void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quad
     double vertex[3]; // x y z of lower left corner
     p8est_qcoord_to_vertex(g->connectivity, which_tree, x, y, z, vertex);
 
-    data->bounds->side_length = P8EST_QUADRANT_LEN(level);
+    data->bounds->x_min = vertex[0];
+    data->bounds->x_max = vertex[0] + 1;
 
-    printf("\n\noct_id: %d -- ll: %d, %d, %d -- ur: %d, %d, %d\n\n", data->octant_id, vertex[0], vertex[1], vertex[2], vertex[0] + data->bounds->side_length, vertex[1] + data->bounds->side_length, vertex[2] + data->bounds->side_length);
+    data->bounds->y_min = vertex[1];
+    data->bounds->y_max = vertex[1] + 1;
+
+    data->bounds->z_min = vertex[2];
+    data->bounds->z_max = vertex[2] + 1;
+}
+
+void populate_particles(octant_data_t * data){
+    //random 3 positions within bounds, tangetized 3d velo
+    for(int i = 0; i < data->buffer->count; i++){
+        //setup particle data
+    }
 }
 
 void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octant){
@@ -81,20 +89,11 @@ void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octan
     data->buffer->particles = (particle_t *) malloc(g->ppq * sizeof(particle_t));
 
 
-    //connects octant data to global pointer to be accessed by other octants of the same rank
-    g->local_octants[g->num_octants] = data;
-
-    data->octant_id = g->num_octants; //saves an incrementing octant_id (per rank)
-
-    g->num_octants++;
+    data->octant_id = g->num_octants++; //saves an incrementing octant_id (per rank)
 
     populate_oct_bounds(g, which_tree, octant);
 
-    //initalize randomness
-    for(int i = 0; i < data->buffer->count; i++){
-        //enter the particle data here for each
-        //data->buffer->particles[i]
-    }
+    populate_particles(data);
 }
 
 void run(int argc, char **argv){
@@ -116,27 +115,15 @@ void run(int argc, char **argv){
 
     //initalize pointers so g can access all local particles
     //this is done before oct_init, so these pointers can be accessed directly
-    pointers_init(g);
 
+    pointers_init(g);
     p8est_setup(g);
     p8est_partition(g->p8est, 0, NULL); // 0 and NULL for uniform weight distribution
 
     g->ghost = p8est_ghost_new(g->p8est, P8EST_CONNECT_FULL);
     g->mesh = p8est_mesh_new(g->p8est, g->ghost, P8EST_CONNECT_FULL);
 
-
-    //DEBUG messages can be put here for testing (also in oct_init)
-    free_particle_data(g);
-    p8est_mesh_destroy(g->mesh);
-    p8est_ghost_destroy(g->ghost);
-    p8est_destroy(g->p8est);
-    p8est_connectivity_destroy(g->connectivity);
-    //sc_finalize();
-    
-    sc_MPI_Barrier(g->mpi->mpicomm);
-
-    int mpiret = sc_MPI_Finalize();
-    SC_CHECK_MPI(mpiret);
+    cleanup(g);
 }
 
 int main(int argc, char **argv){

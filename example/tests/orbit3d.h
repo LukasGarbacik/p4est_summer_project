@@ -13,7 +13,6 @@ typedef struct {
     double x_min, x_max;
     double y_min, y_max;
     double z_min, z_max;
-    double side_length;
 } octant_bounds_t;
 
 typedef struct {
@@ -55,13 +54,8 @@ typedef struct {
     double planet_xyz[3];
     double planet_mass;
 
-    octant_data_t ** local_octants;
     int num_octants;
 } local_data_t;
-
-
-
-//octant struct to hold dynamic data
 
 
 //funciton headers
@@ -69,19 +63,8 @@ typedef struct {
 void mpi_set(int argc, char **argv, local_data_t * data);
 void p8est_setup(local_data_t * data);
 void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octant);
-void pointers_init(local_data_t * data);
-
-
-/*
-typedef struct p4est_iter_volume_info
-{
-  p4est_t            *p4est;
-  p4est_ghost_t      *ghost_layer;
-  p4est_quadrant_t   *quad;    /**< the quadrant of the callback */
-  p4est_locidx_t      quadid;  /**< id in \a quad's tree array (see
-                                    p4est_tree_t) */
-  p4est_topidx_t      treeid;  /**< the tree containing \a quad
-}
-p4est_iter_volume_info_t;
-
-*/
+void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quadrant_t *octant);
+void run(int argc, char **argv);
+void free_particle_data(local_data_t * g);
+void populate_particles(octant_data_t * data);
+void cleanup(local_data_t * g);
