@@ -53,7 +53,6 @@ typedef struct {
 
     double planet_xyz[3];
     double planet_mass;
-
     int num_octants;
 } local_data_t;
 
@@ -66,5 +65,6 @@ void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octan
 void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quadrant_t *octant);
 void run(int argc, char **argv);
 void free_particle_data(local_data_t * g);
-void populate_particles(octant_data_t * data);
+void populate_particles(local_data_t * g, octant_data_t * data);
 void cleanup(local_data_t * g);
+void print_DEBUG_particle_data(local_data_t * g, octant_data_t * data);

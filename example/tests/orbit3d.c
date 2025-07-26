@@ -69,10 +69,18 @@ void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quad
     data->bounds->z_max = vertex[2] + 1;
 }
 
-void populate_particles(octant_data_t * data){
+void populate_particles(local_data_t * g, octant_data_t * data){
     //random 3 positions within bounds, tangetized 3d velo
-    for(int i = 0; i < data->buffer->count; i++){
-        //setup particle data
+    sc_rand_state_t rand_object;
+	for(int i = 0; i < data->buffer->count; i++){
+        //particle positions
+	data->buffer->particles[i].x = data->bounds->x_min + sc_rand(&rand_object);
+	data->buffer->particles[i].y = data->bounds->y_min + sc_rand(&rand_object);
+	data->buffer->particles[i].z = data->bounds->z_min + sc_rand(&rand_object);
+
+	//tangential velocity in 3d
+	//planet mass and position through the global pointer
+	
     }
 }
 
@@ -93,7 +101,9 @@ void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octan
 
     populate_oct_bounds(g, which_tree, octant);
 
-    populate_particles(data);
+    populate_particles(g, data);
+
+    print_DEBUG_particle_data(g, data);
 }
 
 void run(int argc, char **argv){
@@ -102,7 +112,7 @@ void run(int argc, char **argv){
     memset (g, 0, sizeof (*g));
 
     //particles per quad
-    g->ppq = 1;
+    g->ppq = 1000;
     g->planet_xyz[0] = 0.5;
     g->planet_xyz[1] = 0.5;
     g->planet_xyz[2] = 0.5;
@@ -116,7 +126,6 @@ void run(int argc, char **argv){
     //initalize pointers so g can access all local particles
     //this is done before oct_init, so these pointers can be accessed directly
 
-    pointers_init(g);
     p8est_setup(g);
     p8est_partition(g->p8est, 0, NULL); // 0 and NULL for uniform weight distribution
 
@@ -124,6 +133,23 @@ void run(int argc, char **argv){
     g->mesh = p8est_mesh_new(g->p8est, g->ghost, P8EST_CONNECT_FULL);
 
     cleanup(g);
+}
+
+void print_DEBUG_particle_data(local_data_t * g, octant_data_t * data){
+	for(int i = 0; i < data->buffer->count; i++){
+		if(i == 0){
+		       	printf("\n\n Particle data of octant:%d -- \n", data->octant_id);
+			printf("Octant Bounds: x: %f-%f, y: %f-%f, z:%f-%f",
+				       	data->bounds->x_min,
+				       	data->bounds->x_max, 
+					data->bounds->y_min,
+				       	data->bounds->y_max, 
+					data->bounds->z_min, 
+					data->bounds->z_max);
+		}
+		printf("\nparticle :%d x: %.3f, y: %.3f, z: %.3f", i, data->buffer->particles[i].x, data->buffer->particles[i].y, data->buffer->particles[i].z);
+		if(i == data->buffer->count - 1) printf("\n\n");
+	}
 }
 
 int main(int argc, char **argv){
