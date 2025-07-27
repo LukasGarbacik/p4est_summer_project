@@ -53,6 +53,7 @@ typedef struct {
 
     double planet_xyz[3];
     double planet_mass;
+    double grav_const;
     int num_octants;
 } local_data_t;
 

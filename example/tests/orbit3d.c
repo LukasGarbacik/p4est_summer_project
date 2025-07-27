@@ -72,15 +72,35 @@ void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quad
 void populate_particles(local_data_t * g, octant_data_t * data){
     //random 3 positions within bounds, tangetized 3d velo
     sc_rand_state_t rand_object;
+    double dx, dy, dz;
 	for(int i = 0; i < data->buffer->count; i++){
         //particle positions
-	data->buffer->particles[i].x = data->bounds->x_min + sc_rand(&rand_object);
-	data->buffer->particles[i].y = data->bounds->y_min + sc_rand(&rand_object);
-	data->buffer->particles[i].z = data->bounds->z_min + sc_rand(&rand_object);
+        particle_t * p = &data->buffer->particles[i];
+	    p->x = data->bounds->x_min + sc_rand(&rand_object);
+	    p->y = data->bounds->y_min + sc_rand(&rand_object);
+	    p->z = data->bounds->z_min + sc_rand(&rand_object);
 
-	//tangential velocity in 3d
-	//planet mass and position through the global pointer
-	
+	    //tangential velocity in 3d
+        dx = p->x - g->planet_xyz[0];
+        dy = p->y - g->planet_xyz[1];
+        dz = p->z - g->planet_xyz[2];
+        double r = sqrt(dx*dx + dy*dy + dz*dz); //dist from planet
+        double v = sqrt(g->grav_const * g->planet_mass / r); //magnitude of velocity
+        double ax = 0.7, ay = 1, az = 0.4; //arbitrary vector 
+        if (fabs(ax - dx) < 1e-6 && fabs(ay - dy) < 1e-6) {
+            //if arb-vec is parallel w/ radial -> pick new arb-vec
+            ax = 0.2; ay = 0.5; az = 1;
+        }
+           // tangent in direction (cross product of radial vector and arbitrary vector)
+           // 3 x 3 matrix cross product equations
+            double x_vec = dy * az - dz * ay;
+            double y_vec = dz * ax - dx * az;
+            double z_vec = dx * ay - dy * ax;
+            double mag = sqrt(x_vec*x_vec + y_vec*y_vec + z_vec*z_vec);
+
+            p->vx = v * x_vec / mag;
+            p->vy = v * y_vec / mag;
+            p->vz = v * z_vec / mag;
     }
 }
 
@@ -112,11 +132,12 @@ void run(int argc, char **argv){
     memset (g, 0, sizeof (*g));
 
     //particles per quad
-    g->ppq = 1000;
-    g->planet_xyz[0] = 0.5;
-    g->planet_xyz[1] = 0.5;
-    g->planet_xyz[2] = 0.5;
-    g->planet_mass = 0.0167;
+    g->ppq = 10;
+    g->planet_xyz[0] = 1.5; // mid = (1.5)^3 for a (3.0)^3 box
+    g->planet_xyz[1] = 1.5;
+    g->planet_xyz[2] = 1.5;
+    g->planet_mass = 0.07;
+    g->grav_const = 1.0;
     g->num_octants = 0;
 
     mpi_context_t mpi_context; //declare on the run stack
@@ -139,7 +160,7 @@ void print_DEBUG_particle_data(local_data_t * g, octant_data_t * data){
 	for(int i = 0; i < data->buffer->count; i++){
 		if(i == 0){
 		       	printf("\n\n Particle data of octant:%d -- \n", data->octant_id);
-			printf("Octant Bounds: x: %f-%f, y: %f-%f, z:%f-%f",
+			printf("Octant Bounds: x: %.1f-%.1f, y: %.1f-%.1f, z:%.1f-%.1f",
 				       	data->bounds->x_min,
 				       	data->bounds->x_max, 
 					data->bounds->y_min,
@@ -147,7 +168,9 @@ void print_DEBUG_particle_data(local_data_t * g, octant_data_t * data){
 					data->bounds->z_min, 
 					data->bounds->z_max);
 		}
-		printf("\nparticle :%d x: %.3f, y: %.3f, z: %.3f", i, data->buffer->particles[i].x, data->buffer->particles[i].y, data->buffer->particles[i].z);
+		printf("\n\nparticle :%d x: %.3f, y: %.3f, z: %.3f", i, data->buffer->particles[i].x, data->buffer->particles[i].y, data->buffer->particles[i].z);
+        printf("\n\nparticle :%d vx: %.3f, vy: %.3f, vz: %.3f", i, data->buffer->particles[i].vx, data->buffer->particles[i].vy, data->buffer->particles[i].vz);
+
 		if(i == data->buffer->count - 1) printf("\n\n");
 	}
 }
