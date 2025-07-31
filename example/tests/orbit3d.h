@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #define total_octants 27
 
@@ -93,7 +94,7 @@ bool in_bounds(particle_t * p, octant_bounds_t * bounds);
 int query_oct_id(local_data_t * g, particle_t * p);
 //main run
 void run(int argc, char **argv);
-void loop(local_data_t * g);
+void loop(local_data_t * g, const char *output_dir);
 //cleanup
 void cleanup(local_data_t * g);
 void free_particle_data(local_data_t * g);
@@ -101,3 +102,4 @@ void free_local(local_data_t * g);
 //output
 void print_DEBUG_particle_data(const local_data_t * g, const octant_data_t * data);
 void print_DEBUG_send_data(const local_data_t * g);
+void write_vtk(local_data_t * g, const char *output_dir, int cur_step);
