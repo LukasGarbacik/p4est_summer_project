@@ -2,6 +2,9 @@
 
 static sc_rand_state_t rand_object;
 
+static int num_switch_id = 0;
+static int num_insert = 0;
+
 void free_particle_data(local_data_t * g){
     for (p4est_locidx_t i = 0; i < g->mesh->local_num_quadrants; ++i) {
         p8est_quadrant_t *oct = p8est_mesh_quadrant_cumulative(g->p8est, g->mesh, i, NULL, NULL);
@@ -164,15 +167,21 @@ int query_oct_id(local_data_t * g, particle_t * p){
 }
 
 void insert_particle(particle_t * p, particle_buffer_t * buffer){
+    num_insert++;
     if(buffer == NULL || buffer->particles == NULL){
+        printf("WHY HERE");
         return;
     }
     if(buffer->count >= buffer->capacity){
         buffer->capacity *= 2;  // Double the capacity
         buffer->particles = realloc(buffer->particles, buffer->capacity * sizeof(particle_t));
     }
-    
+    assert(buffer->capacity >= buffer->count);
+    printf("particle put in buffer index (INSERT NUMBER %d)", num_insert);
+
+        printf("\nNUM1");
     buffer->particles[buffer->count] = *p;
+        printf("\nNUM2");
     buffer->count++;
 }
 
@@ -191,26 +200,21 @@ void insert_particle_into_outgoing(local_data_t * g, particle_t * p, int new_id)
                 g->outgoing_local[i].octant_id = -2; //dummy value
             }
         }
-        printf("finished dummy set");
         //each process combines transfer particles into one buffer per octant
         for(int i = 0; i < g->mesh->local_num_quadrants; ++i){
             //wrong buffer ->
-            printf("\ndoing loop");
             if(g->outgoing_local[i].octant_id != -2 && g->outgoing_local[i].octant_id != new_id) continue;
             //not the first particle in local send buffer
             if(g->outgoing_local[i].octant_id == new_id){
-                printf("\nparticle about to be inserted into buffer fr");
                 insert_particle(p, g->outgoing_local[i].buffer);
             }
             else{//is the first particle in local send buffer (init id)
-                printf("\nDOUBLE sanity check local send");
                 g->outgoing_local[i].buffer = (particle_buffer_t *) malloc(sizeof(particle_buffer_t));
                 memset(g->outgoing_local[i].buffer, 0, sizeof(particle_buffer_t));
                 g->outgoing_local[i].octant_id = new_id;
                 g->outgoing_local[i].buffer->capacity = 10;
                  //10 particle space per local send buffer initally
                 g->outgoing_local[i].buffer->particles = (particle_t *) malloc(g->outgoing_local[i].buffer->capacity * sizeof(particle_t));
-                printf("\nTRIPLE sanity check local send");
                 insert_particle(p, g->outgoing_local[i].buffer);
             }
             break;
@@ -230,6 +234,19 @@ void remove_particle(particle_buffer_t * buffer, int index){
     buffer->count--;
 }
 
+void free_local(local_data_t * g){
+    if(g->outgoing_local == NULL) return;
+    for (p4est_locidx_t i = 0; i < g->mesh->local_num_quadrants; ++i) {
+        if(g->outgoing_local[i].buffer){
+            if(g->outgoing_local[i].buffer->particles) free(g->outgoing_local[i].buffer->particles);
+            free(g->outgoing_local[i].buffer);
+            g->outgoing_local[i].buffer = NULL;
+        }
+    }
+    free(g->outgoing_local);
+    g->outgoing_local = NULL;
+}
+
 void combine_local(local_data_t * g){
     if(g->outgoing_local == NULL) return;
     for (p4est_locidx_t i = 0; i < g->mesh->local_num_quadrants; ++i) {
@@ -245,6 +262,7 @@ void combine_local(local_data_t * g){
             }
         }
     }
+    free_local(g);
 }
 
 void populate_send_buffers(local_data_t * g){
@@ -259,11 +277,14 @@ void populate_send_buffers(local_data_t * g){
 
                 //printf("oct: %d, paricle: %d, new_id:, %d", i, j, new_id);
                 if(new_id == data->octant_id || /*DEBUG*/ new_id == -1) continue; //particle not transferred
+                num_switch_id++;
                 p8est_quadrant_t *oct_rec = p8est_mesh_quadrant_cumulative(g->p8est, g->mesh, new_id, NULL, NULL);
                 octant_data_t * data2 = (octant_data_t *) oct_rec->p.user_data;
                 //printf("\nbounds- x: %.2f, y:%.2f, z:%.2f \n", data2->bounds->x_min,data2->bounds->y_min, data2->bounds->z_min);
                 insert_particle_into_outgoing(g, &data->buffer->particles[j], new_id);
-                remove_particle(data->buffer, j--);
+                remove_particle(data->buffer, j);
+                j--;
+                printf("\nnum_switched = %d", num_switch_id);
             }
         }
 }
@@ -306,13 +327,13 @@ void do_dynamics(local_data_t * g){
 
 void loop(local_data_t * g){
     for(int cur_step = 0; cur_step < g->num_steps; ++cur_step){
-        print_DEBUG_send_data(g);
 
 
         do_dynamics(g);
         
         populate_send_buffers(g);
 
+        print_DEBUG_send_data(g);
         //Outgoing data has been prepared
 
         //combine local transfer data
@@ -378,10 +399,14 @@ void print_DEBUG_send_data(const local_data_t * g){
     if(g->outgoing_local != NULL){
         for(int i = 0; i < g->mesh->local_num_quadrants; ++i){
             octant_data_t * data = &g->outgoing_local[i];
-            printf("\n\nDATA going to octant %d\n", i);
-            if(data->buffer && data->buffer->particles){
-                for(int j = 0; j < data->buffer->count; ++j){
-                    printf("particle %d, x: %.3f, y:%.3f, z:%.3f\n", j, data->buffer->particles[j].x, data->buffer->particles[j].y, data->buffer->particles[j].z);
+            printf("\n\nDATA going to octant %d\n", g->outgoing_local[i].octant_id);
+            if(g->outgoing_local[i].buffer && g->outgoing_local[i].buffer->particles){
+                for(int j = 0; j < g->outgoing_local[i].buffer->count; ++j){
+                    printf("particle %d, x: %.3f, y:%.3f, z:%.3f\n", 
+                    j,
+                    g->outgoing_local[i].buffer->particles[j].x,
+                    g->outgoing_local[i].buffer->particles[j].y,
+                    g->outgoing_local[i].buffer->particles[j].z);
                 }
             }
         }

@@ -10,6 +10,7 @@
 #include <sc_random.h>
 #include <stdbool.h>
 #include <time.h>
+#include <assert.h>
 
 #define total_octants 27
 
@@ -96,6 +97,7 @@ void loop(local_data_t * g);
 //cleanup
 void cleanup(local_data_t * g);
 void free_particle_data(local_data_t * g);
+void free_local(local_data_t * g);
 //output
 void print_DEBUG_particle_data(const local_data_t * g, const octant_data_t * data);
 void print_DEBUG_send_data(const local_data_t * g);

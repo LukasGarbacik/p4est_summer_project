@@ -1,0 +1,1018 @@
+[libsc] This is libsc 2.8.7
+[libsc] MPI is enabled 1 shared 1
+[p4est] This is p4est 2.8.7.999
+[p4est] Into p8est_new with min quadrants 0 level 0 uniform 1
+[p4est]  New p8est with 27 trees on 1 processors
+[p4est]  Initial level 0 potential global quadrants 27 per tree 1
+[p4est 0]  first tree 0 first quadrant 0 global quadrant 0
+[p4est 0]  last tree 26 last quadrant 0 global quadrant 26
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:0.00-1.00 p->z: 0.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:0.00-1.00 p->z: 0.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:1.00-2.00 p->z: 1.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:1.00-2.00 p->z: 1.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:0.00-1.00 p->y: 0.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:0.00-1.00 p->y: 0.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:1.00-2.00 p->y: 1.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:1.00-2.00 p->y: 1.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:0.00-1.00 p->x: 0.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:0.00-1.00 p->x: 0.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:1.00-2.00 p->x: 1.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:1.00-2.00 p->x: 1.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:2.00-3.00 p->z: 2.932
+RAND DEBUG EXAMPLE: 0.9786
+x bound:2.00-3.00 p->x: 2.856
+y bound:2.00-3.00 p->y: 2.001
+z bound:2.00-3.00 p->z: 2.872
+RAND DEBUG EXAMPLE: 0.6765
+x bound:2.00-3.00 p->x: 2.623
+y bound:2.00-3.00 p->y: 2.891
+z bound:2.00-3.00 p->z: 2.932
+[p4est 0]  total local quadrants 27
+[p4est] Done p8est_new with 27 total quadrants
+[p4est] Into p8est_partition with 27 total quadrants
+[p4est] Done p8est_partition no shipping
+[p4est] Into p8est_ghost_new CORNER
+[p4est 0]  Total quadrants skipped 0 ghosts to receive 0
+[p4est] Done p8est_ghost_new
+[p4est] Into p8est_ghost_new CORNER
+[p4est 0]  Total quadrants skipped 0 ghosts to receive 0
+[p4est] Done p8est_ghost_new
+
+
+
+
+ Particle data of octant:0 -- 
+Octant Bounds: x: 0.0-1.0, y: 0.0-1.0, z:0.0-1.0
+
+particle :0 x: 0.878, y: -0.061, z: 1.063
+
+particle :0 vx: 0.021, vy: -0.062, vz: 0.190
+
+particle :1 x: 0.798, y: 0.895, z: 0.760
+
+particle :1 vx: 0.175, vy: 0.004, vz: -0.172
+
+
+new oct: 0, particle (0.80, 0.89, 0.76) being sent
+bounds- x: 0.00, y:0.00, z:0.00 
+
+
+
+
+ Particle data of octant:1 -- 
+Octant Bounds: x: 1.0-2.0, y: 0.0-1.0, z:0.0-1.0
+
+particle :0 x: 1.855, y: -0.054, z: 1.071
+
+particle :0 vx: -0.002, vy: -0.056, vz: 0.199
+
+particle :1 x: 1.729, y: 0.797, z: 1.202
+
+particle :1 vx: 0.106, vy: -0.094, vz: 0.270
+
+
+new oct: 5, particle (1.73, 0.80, 1.20) being sent
+bounds- x: 1.00, y:0.00, z:1.00 
+inserting partice into octant: 5
+allocated 648 bytesparticle put in buffer index (INSERT NUMBER 1)
+NUM1
+NUM2
+num_switched = 1
+
+
+
+ Particle data of octant:2 -- 
+Octant Bounds: x: 0.0-1.0, y: 1.0-2.0, z:0.0-1.0
+
+particle :0 x: 1.101, y: 0.947, z: 0.773
+
+particle :0 vx: 0.244, vy: -0.054, vz: -0.099
+
+particle :1 x: 0.801, y: 1.862, z: 0.748
+
+particle :1 vx: 0.178, vy: -0.028, vz: -0.183
+
+
+new oct: 1, particle (1.10, 0.95, 0.77) being sent
+bounds- x: 1.00, y:0.00, z:0.00 
+inserting partice into octant: 1particle put in buffer index (INSERT NUMBER 2)
+NUM1
+NUM2
+num_switched = 2
+new oct: 2, particle (0.80, 1.86, 0.75) being sent
+bounds- x: 0.00, y:1.00, z:0.00 
+
+
+
+
+ Particle data of octant:3 -- 
+Octant Bounds: x: 1.0-2.0, y: 1.0-2.0, z:0.0-1.0
+
+particle :0 x: 1.939, y: 0.890, z: 1.134
+
+particle :0 vx: 0.083, vy: -0.111, vz: 0.262
+
+particle :1 x: 1.863, y: 1.648, z: 0.992
+
+particle :1 vx: 0.240, vy: -0.243, vz: 0.061
+
+
+new oct: 5, particle (1.94, 0.89, 1.13) being sent
+bounds- x: 1.00, y:0.00, z:1.00 
+inserting partice into octant: 5particle put in buffer index (INSERT NUMBER 3)
+NUM1
+NUM2
+num_switched = 3
+new oct: 3, particle (1.86, 1.65, 0.99) being sent
+bounds- x: 1.00, y:1.00, z:0.00 
+
+
+
+
+ Particle data of octant:4 -- 
+Octant Bounds: x: 0.0-1.0, y: 0.0-1.0, z:1.0-2.0
+
+particle :0 x: 0.697, y: 0.114, z: 1.937
+
+particle :0 vx: -0.160, vy: 0.113, vz: 0.065
+
+particle :1 x: 0.504, y: 1.073, z: 1.805
+
+particle :1 vx: -0.120, vy: 0.182, vz: -0.126
+
+
+new oct: 4, particle (0.70, 0.11, 1.94) being sent
+bounds- x: 0.00, y:0.00, z:1.00 
+
+new oct: 6, particle (0.50, 1.07, 1.81) being sent
+bounds- x: 0.00, y:1.00, z:1.00 
+inserting partice into octant: 6particle put in buffer index (INSERT NUMBER 4)
+NUM1
+NUM2
+num_switched = 4
+
+
+
+ Particle data of octant:5 -- 
+Octant Bounds: x: 1.0-2.0, y: 0.0-1.0, z:1.0-2.0
+
+particle :0 x: 1.731, y: 0.042, z: 2.038
+
+particle :0 vx: -0.125, vy: 0.041, vz: 0.166
+
+particle :1 x: 1.377, y: 1.074, z: 2.046
+
+particle :1 vx: -0.246, vy: 0.183, vz: 0.115
+
+
+new oct: 19, particle (1.73, 0.04, 2.04) being sent
+bounds- x: 1.00, y:0.00, z:2.00 
+inserting partice into octant: 19particle put in buffer index (INSERT NUMBER 5)
+NUM1
+NUM2
+num_switched = 5
+new oct: 21, particle (1.38, 1.07, 2.05) being sent
+bounds- x: 1.00, y:1.00, z:2.00 
+inserting partice into octant: 21particle put in buffer index (INSERT NUMBER 6)
+NUM1
+NUM2
+num_switched = 6
+
+
+
+ Particle data of octant:6 -- 
+Octant Bounds: x: 0.0-1.0, y: 1.0-2.0, z:1.0-2.0
+
+particle :0 x: 0.726, y: 1.225, z: 1.736
+
+particle :0 vx: -0.131, vy: 0.224, vz: -0.136
+
+particle :1 x: 0.623, y: 1.992, z: 1.686
+
+particle :1 vx: 0.000, vy: 0.101, vz: -0.246
+
+
+new oct: 6, particle (0.73, 1.23, 1.74) being sent
+bounds- x: 0.00, y:1.00, z:1.00 
+
+new oct: 6, particle (0.62, 1.99, 1.69) being sent
+bounds- x: 0.00, y:1.00, z:1.00 
+
+
+
+
+ Particle data of octant:7 -- 
+Octant Bounds: x: 1.0-2.0, y: 1.0-2.0, z:1.0-2.0
+
+particle :0 x: 1.594, y: 1.136, z: 2.042
+
+particle :0 vx: -0.263, vy: 0.135, vz: 0.170
+
+particle :1 x: 1.348, y: 1.976, z: 1.660
+
+particle :1 vx: -0.275, vy: 0.085, vz: -0.271
+
+
+new oct: 21, particle (1.59, 1.14, 2.04) being sent
+bounds- x: 1.00, y:1.00, z:2.00 
+inserting partice into octant: 21particle put in buffer index (INSERT NUMBER 7)
+NUM1
+NUM2
+num_switched = 7
+new oct: 7, particle (1.35, 1.98, 1.66) being sent
+bounds- x: 1.00, y:1.00, z:1.00 
+
+
+
+
+ Particle data of octant:8 -- 
+Octant Bounds: x: 2.0-3.0, y: 0.0-1.0, z:0.0-1.0
+
+particle :0 x: 2.848, y: -0.056, z: 1.045
+
+particle :0 vx: -0.008, vy: -0.058, vz: 0.173
+
+particle :1 x: 2.635, y: 0.801, z: 1.139
+
+particle :1 vx: 0.012, vy: -0.090, vz: 0.208
+
+
+new oct: 10, particle (2.64, 0.80, 1.14) being sent
+bounds- x: 2.00, y:0.00, z:1.00 
+inserting partice into octant: 10particle put in buffer index (INSERT NUMBER 8)
+NUM1
+NUM2
+num_switched = 8
+
+
+
+ Particle data of octant:9 -- 
+Octant Bounds: x: 2.0-3.0, y: 1.0-2.0, z:0.0-1.0
+
+particle :0 x: 2.877, y: 0.907, z: 1.062
+
+particle :0 vx: 0.021, vy: -0.094, vz: 0.190
+
+particle :1 x: 2.708, y: 1.740, z: 1.089
+
+particle :1 vx: 0.085, vy: -0.151, vz: 0.157
+
+
+new oct: 10, particle (2.88, 0.91, 1.06) being sent
+bounds- x: 2.00, y:0.00, z:1.00 
+inserting partice into octant: 10particle put in buffer index (INSERT NUMBER 9)
+NUM1
+NUM2
+num_switched = 9
+new oct: 11, particle (2.71, 1.74, 1.09) being sent
+bounds- x: 2.00, y:1.00, z:1.00 
+inserting partice into octant: 11particle put in buffer index (INSERT NUMBER 10)
+NUM1
+NUM2
+num_switched = 10
+
+
+
+ Particle data of octant:10 -- 
+Octant Bounds: x: 2.0-3.0, y: 0.0-1.0, z:1.0-2.0
+
+particle :0 x: 2.777, y: -0.007, z: 2.039
+
+particle :0 vx: -0.080, vy: -0.008, vz: 0.167
+
+particle :1 x: 2.501, y: 0.888, z: 2.127
+
+particle :1 vx: -0.123, vy: -0.002, vz: 0.196
+
+
+new oct: 22, particle (2.50, 0.89, 2.13) being sent
+bounds- x: 2.00, y:0.00, z:2.00 
+inserting partice into octant: 22particle put in buffer index (INSERT NUMBER 11)
+NUM1
+NUM2
+num_switched = 11
+
+
+
+ Particle data of octant:11 -- 
+Octant Bounds: x: 2.0-3.0, y: 1.0-2.0, z:1.0-2.0
+
+particle :0 x: 2.760, y: 0.978, z: 2.067
+
+particle :0 vx: -0.097, vy: -0.023, vz: 0.195
+
+particle :1 x: 2.513, y: 1.839, z: 2.138
+
+particle :1 vx: -0.110, vy: -0.052, vz: 0.206
+
+
+new oct: 22, particle (2.76, 0.98, 2.07) being sent
+bounds- x: 2.00, y:0.00, z:2.00 
+inserting partice into octant: 22particle put in buffer index (INSERT NUMBER 12)
+NUM1
+NUM2
+num_switched = 12
+new oct: 23, particle (2.51, 1.84, 2.14) being sent
+bounds- x: 2.00, y:1.00, z:2.00 
+inserting partice into octant: 23particle put in buffer index (INSERT NUMBER 13)
+NUM1
+NUM2
+num_switched = 13
+
+
+
+ Particle data of octant:12 -- 
+Octant Bounds: x: 0.0-1.0, y: 2.0-3.0, z:0.0-1.0
+
+particle :0 x: 1.063, y: 1.933, z: 0.714
+
+particle :0 vx: 0.207, vy: -0.068, vz: -0.158
+
+particle :1 x: 0.739, y: 2.868, z: 0.768
+
+particle :1 vx: 0.116, vy: -0.023, vz: -0.164
+
+
+new oct: 3, particle (1.06, 1.93, 0.71) being sent
+bounds- x: 1.00, y:1.00, z:0.00 
+inserting partice into octant: 3particle put in buffer index (INSERT NUMBER 14)
+NUM1
+NUM2
+num_switched = 14
+new oct: 12, particle (0.74, 2.87, 0.77) being sent
+bounds- x: 0.00, y:2.00, z:0.00 
+
+
+
+
+ Particle data of octant:13 -- 
+Octant Bounds: x: 1.0-2.0, y: 2.0-3.0, z:0.0-1.0
+
+particle :0 x: 2.050, y: 1.787, z: 0.938
+
+particle :0 vx: 0.194, vy: -0.214, vz: 0.066
+
+particle :1 x: 1.785, y: 2.797, z: 0.819
+
+particle :1 vx: 0.161, vy: -0.094, vz: -0.112
+
+
+new oct: 9, particle (2.05, 1.79, 0.94) being sent
+bounds- x: 2.00, y:1.00, z:0.00 
+inserting partice into octant: 9particle put in buffer index (INSERT NUMBER 15)
+NUM1
+NUM2
+num_switched = 15
+new oct: 13, particle (1.78, 2.80, 0.82) being sent
+bounds- x: 1.00, y:2.00, z:0.00 
+
+
+
+
+ Particle data of octant:14 -- 
+Octant Bounds: x: 0.0-1.0, y: 2.0-3.0, z:1.0-2.0
+
+particle :0 x: 0.877, y: 2.080, z: 1.591
+
+particle :0 vx: 0.020, vy: 0.079, vz: -0.281
+
+particle :1 x: 0.649, y: 2.938, z: 1.734
+
+particle :1 vx: 0.025, vy: 0.048, vz: -0.197
+
+
+new oct: 14, particle (0.88, 2.08, 1.59) being sent
+bounds- x: 0.00, y:2.00, z:1.00 
+
+new oct: 14, particle (0.65, 2.94, 1.73) being sent
+bounds- x: 0.00, y:2.00, z:1.00 
+
+
+
+
+ Particle data of octant:15 -- 
+Octant Bounds: x: 1.0-2.0, y: 2.0-3.0, z:1.0-2.0
+
+particle :0 x: 1.532, y: 2.083, z: 1.810
+
+particle :0 vx: -0.324, vy: 0.082, vz: -0.062
+
+particle :1 x: 1.651, y: 2.921, z: 1.714
+
+particle :1 vx: 0.028, vy: 0.031, vz: -0.217
+
+
+new oct: 15, particle (1.53, 2.08, 1.81) being sent
+bounds- x: 1.00, y:2.00, z:1.00 
+
+new oct: 15, particle (1.65, 2.92, 1.71) being sent
+bounds- x: 1.00, y:2.00, z:1.00 
+
+
+
+
+ Particle data of octant:16 -- 
+Octant Bounds: x: 2.0-3.0, y: 2.0-3.0, z:0.0-1.0
+
+particle :0 x: 2.939, y: 1.865, z: 1.013
+
+particle :0 vx: 0.083, vy: -0.136, vz: 0.141
+
+particle :1 x: 2.765, y: 2.761, z: 0.958
+
+particle :1 vx: 0.142, vy: -0.130, vz: 0.026
+
+
+new oct: 11, particle (2.94, 1.87, 1.01) being sent
+bounds- x: 2.00, y:1.00, z:1.00 
+inserting partice into octant: 11particle put in buffer index (INSERT NUMBER 16)
+NUM1
+NUM2
+num_switched = 16
+new oct: 16, particle (2.76, 2.76, 0.96) being sent
+bounds- x: 2.00, y:2.00, z:0.00 
+
+
+
+
+ Particle data of octant:17 -- 
+Octant Bounds: x: 2.0-3.0, y: 2.0-3.0, z:1.0-2.0
+
+particle :0 x: 2.793, y: 1.933, z: 2.070
+
+particle :0 vx: -0.064, vy: -0.068, vz: 0.198
+
+particle :1 x: 2.710, y: 2.758, z: 2.046
+
+particle :1 vx: 0.087, vy: -0.133, vz: 0.115
+
+
+new oct: 23, particle (2.79, 1.93, 2.07) being sent
+bounds- x: 2.00, y:1.00, z:2.00 
+inserting partice into octant: 23particle put in buffer index (INSERT NUMBER 17)
+NUM1
+NUM2
+num_switched = 17
+new oct: 26, particle (2.71, 2.76, 2.05) being sent
+bounds- x: 2.00, y:2.00, z:2.00 
+inserting partice into octant: 26particle put in buffer index (INSERT NUMBER 18)
+NUM1
+NUM2
+num_switched = 18
+
+
+
+ Particle data of octant:18 -- 
+Octant Bounds: x: 0.0-1.0, y: 0.0-1.0, z:2.0-3.0
+
+particle :0 x: 0.709, y: 0.106, z: 2.893
+
+particle :0 vx: -0.147, vy: 0.105, vz: 0.021
+
+particle :1 x: 0.483, y: 1.020, z: 2.874
+
+particle :1 vx: -0.140, vy: 0.129, vz: -0.058
+
+
+new oct: 18, particle (0.71, 0.11, 2.89) being sent
+bounds- x: 0.00, y:0.00, z:2.00 
+
+new oct: 20, particle (0.48, 1.02, 2.87) being sent
+bounds- x: 0.00, y:1.00, z:2.00 
+inserting partice into octant: 20particle put in buffer index (INSERT NUMBER 19)
+NUM1
+NUM2
+num_switched = 19
+
+
+
+ Particle data of octant:19 -- 
+Octant Bounds: x: 1.0-2.0, y: 0.0-1.0, z:2.0-3.0
+
+particle :0 x: 1.711, y: 0.072, z: 2.962
+
+particle :0 vx: -0.145, vy: 0.071, vz: 0.090
+
+particle :1 x: 1.444, y: 1.003, z: 2.963
+
+particle :1 vx: -0.179, vy: 0.112, vz: 0.032
+
+
+new oct: 19, particle (1.71, 0.07, 2.96) being sent
+bounds- x: 1.00, y:0.00, z:2.00 
+
+new oct: 21, particle (1.44, 1.00, 2.96) being sent
+bounds- x: 1.00, y:1.00, z:2.00 
+inserting partice into octant: 21particle put in buffer index (INSERT NUMBER 20)
+NUM1
+NUM2
+num_switched = 20
+
+
+
+ Particle data of octant:20 -- 
+Octant Bounds: x: 0.0-1.0, y: 1.0-2.0, z:2.0-3.0
+
+particle :0 x: 0.704, y: 1.137, z: 2.818
+
+particle :0 vx: -0.153, vy: 0.136, vz: -0.054
+
+particle :1 x: 0.518, y: 2.010, z: 2.806
+
+particle :1 vx: -0.106, vy: 0.119, vz: -0.126
+
+
+new oct: 20, particle (0.70, 1.14, 2.82) being sent
+bounds- x: 0.00, y:1.00, z:2.00 
+
+new oct: 24, particle (0.52, 2.01, 2.81) being sent
+bounds- x: 0.00, y:2.00, z:2.00 
+inserting partice into octant: 24particle put in buffer index (INSERT NUMBER 21)
+NUM1
+NUM2
+num_switched = 21
+
+
+
+ Particle data of octant:21 -- 
+Octant Bounds: x: 1.0-2.0, y: 1.0-2.0, z:2.0-3.0
+
+particle :0 x: 1.671, y: 1.104, z: 2.924
+
+particle :0 vx: -0.185, vy: 0.103, vz: 0.052
+
+particle :1 x: 1.448, y: 2.012, z: 2.881
+
+particle :1 vx: -0.176, vy: 0.121, vz: -0.051
+
+
+new oct: 21, particle (1.67, 1.10, 2.92) being sent
+bounds- x: 1.00, y:1.00, z:2.00 
+
+new oct: 25, particle (1.45, 2.01, 2.88) being sent
+bounds- x: 1.00, y:2.00, z:2.00 
+inserting partice into octant: 25particle put in buffer index (INSERT NUMBER 22)
+NUM1
+NUM2
+num_switched = 22
+
+
+
+ Particle data of octant:22 -- 
+Octant Bounds: x: 2.0-3.0, y: 0.0-1.0, z:2.0-3.0
+
+particle :0 x: 2.743, y: 0.031, z: 2.995
+
+particle :0 vx: -0.113, vy: 0.030, vz: 0.123
+
+particle :1 x: 2.476, y: 0.942, z: 3.044
+
+particle :1 vx: -0.147, vy: 0.051, vz: 0.112
+
+
+new oct: 22, particle (2.74, 0.03, 3.00) being sent
+bounds- x: 2.00, y:0.00, z:2.00 
+
+
+
+
+ Particle data of octant:23 -- 
+Octant Bounds: x: 2.0-3.0, y: 1.0-2.0, z:2.0-3.0
+
+particle :0 x: 2.719, y: 1.039, z: 2.996
+
+particle :0 vx: -0.137, vy: 0.038, vz: 0.124
+
+particle :1 x: 2.459, y: 1.952, z: 3.017
+
+particle :1 vx: -0.164, vy: 0.062, vz: 0.086
+
+
+new oct: 23, particle (2.72, 1.04, 3.00) being sent
+bounds- x: 2.00, y:1.00, z:2.00 
+
+
+
+
+ Particle data of octant:24 -- 
+Octant Bounds: x: 0.0-1.0, y: 2.0-3.0, z:2.0-3.0
+
+particle :0 x: 0.742, y: 2.123, z: 2.742
+
+particle :0 vx: -0.114, vy: 0.121, vz: -0.130
+
+particle :1 x: 0.565, y: 2.980, z: 2.787
+
+particle :1 vx: -0.058, vy: 0.089, vz: -0.145
+
+
+new oct: 24, particle (0.74, 2.12, 2.74) being sent
+bounds- x: 0.00, y:2.00, z:2.00 
+
+new oct: 24, particle (0.57, 2.98, 2.79) being sent
+bounds- x: 0.00, y:2.00, z:2.00 
+
+
+
+
+ Particle data of octant:25 -- 
+Octant Bounds: x: 1.0-2.0, y: 2.0-3.0, z:2.0-3.0
+
+particle :0 x: 1.672, y: 2.114, z: 2.845
+
+particle :0 vx: -0.184, vy: 0.113, vz: -0.027
+
+particle :1 x: 1.516, y: 2.994, z: 2.816
+
+particle :1 vx: -0.107, vy: 0.103, vz: -0.115
+
+
+new oct: 25, particle (1.67, 2.11, 2.84) being sent
+bounds- x: 1.00, y:2.00, z:2.00 
+
+new oct: 25, particle (1.52, 2.99, 2.82) being sent
+bounds- x: 1.00, y:2.00, z:2.00 
+
+
+
+
+ Particle data of octant:26 -- 
+Octant Bounds: x: 2.0-3.0, y: 2.0-3.0, z:2.0-3.0
+
+particle :0 x: 2.707, y: 2.046, z: 2.978
+
+particle :0 vx: -0.149, vy: 0.045, vz: 0.106
+
+particle :1 x: 2.470, y: 2.975, z: 2.948
+
+particle :1 vx: -0.153, vy: 0.084, vz: 0.017
+
+
+new oct: 26, particle (2.71, 2.05, 2.98) being sent
+bounds- x: 2.00, y:2.00, z:2.00 
+
+new oct: 26, particle (2.47, 2.98, 2.95) being sent
+bounds- x: 2.00, y:2.00, z:2.00 
+
+
+DATA going to octant 5
+particle 0, x: 1.729, y:0.797, z:1.202
+particle 1, x: 1.939, y:0.890, z:1.134
+
+
+DATA going to octant 1
+particle 0, x: 1.101, y:0.947, z:0.773
+
+
+DATA going to octant 6
+particle 0, x: 0.504, y:1.073, z:1.805
+
+
+DATA going to octant 19
+particle 0, x: 1.731, y:0.042, z:2.038
+
+
+DATA going to octant 21
+particle 0, x: 1.377, y:1.074, z:2.046
+particle 1, x: 1.594, y:1.136, z:2.042
+particle 2, x: 1.444, y:1.003, z:2.963
+
+
+DATA going to octant 10
+particle 0, x: 2.635, y:0.801, z:1.139
+particle 1, x: 2.877, y:0.907, z:1.062
+
+
+DATA going to octant 11
+particle 0, x: 2.708, y:1.740, z:1.089
+particle 1, x: 2.939, y:1.865, z:1.013
+
+
+DATA going to octant 22
+particle 0, x: 2.501, y:0.888, z:2.127
+particle 1, x: 2.760, y:0.978, z:2.067
+
+
+DATA going to octant 23
+particle 0, x: 2.513, y:1.839, z:2.138
+particle 1, x: 2.793, y:1.933, z:2.070
+
+
+DATA going to octant 3
+particle 0, x: 1.063, y:1.933, z:0.714
+
+
+DATA going to octant 9
+particle 0, x: 2.050, y:1.787, z:0.938
+
+
+DATA going to octant 26
+particle 0, x: 2.710, y:2.758, z:2.046
+
+
+DATA going to octant 20
+particle 0, x: 0.483, y:1.020, z:2.874
+
+
+DATA going to octant 24
+particle 0, x: 0.518, y:2.010, z:2.806
+
+
+DATA going to octant 25
+particle 0, x: 1.448, y:2.012, z:2.881
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+
+DATA going to octant -2
+
+oct: 1, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 23)
+NUM1
+NUM2
+oct: 3, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 24)
+NUM1
+NUM2
+oct: 5, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 25)
+NUM1
+NUM2
+oct: 5, particle: 1 being pushed-backparticle put in buffer index (INSERT NUMBER 26)
+NUM1
+NUM2
+oct: 6, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 27)
+NUM1
+NUM2
+oct: 9, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 28)
+NUM1
+NUM2
+oct: 10, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 29)
+NUM1
+NUM2
+oct: 10, particle: 1 being pushed-backparticle put in buffer index (INSERT NUMBER 30)
+NUM1
+NUM2
+oct: 11, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 31)
+NUM1
+NUM2
+oct: 11, particle: 1 being pushed-backparticle put in buffer index (INSERT NUMBER 32)
+NUM1
+NUM2
+oct: 19, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 33)
+NUM1
+NUM2
+oct: 20, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 34)
+NUM1
+NUM2
+oct: 21, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 35)
+NUM1
+NUM2
+oct: 21, particle: 1 being pushed-backparticle put in buffer index (INSERT NUMBER 36)
+NUM1
+NUM2
+oct: 21, particle: 2 being pushed-backparticle put in buffer index (INSERT NUMBER 37)
+NUM1
+NUM2
+oct: 22, particle: 0 being pushed-backparticle put in buffer index (INSERT NUMBER 38)
+NUM1
+NUM2
+oct: 22, particle: 1 being pushed-backparticle put in buffer index (INSERT NUMBER 39)
+NUM1
+NUM2
+oct: 23, particle: 0 being pushed-back[libsc 0] Caught signal SEGV
+[libsc 0] Abort: Obtained 11 stack frames
+[libsc 0] Stack 0: libsc.so.4(+0xcfda) [0x7f47308a8fda]
+[libsc 0] Stack 1: libsc.so.4(sc_abort+0xd) [0x7f47308a8fa8]
+[libsc 0] Stack 2: libsc.so.4(+0xb996) [0x7f47308a7996]
+[libsc 0] Stack 3: libc.so.6(+0x4e5b0) [0x7f472eb7b5b0]
+[libsc 0] Stack 4: orbit3d() [0x4019d0]
+[libsc 0] Stack 5: orbit3d() [0x402196]
+[libsc 0] Stack 6: orbit3d() [0x40269d]
+[libsc 0] Stack 7: orbit3d() [0x402822]
+[libsc 0] Stack 8: orbit3d() [0x402c54]
+[libsc 0] Stack 9: libc.so.6(__libc_start_main+0xe5) [0x7f472eb677e5]
+[libsc 0] Stack 10: orbit3d() [0x400eae]
