@@ -21,10 +21,6 @@ void free_particle_data(local_data_t * g){
                 free(data->buffer);
                 data->buffer = NULL;
             }
-            if(data->bounds) {
-                free(data->bounds);
-                data->bounds = NULL;
-            }
             free(data);
             oct->p.user_data = NULL;
         }
@@ -41,6 +37,7 @@ void cleanup(local_data_t * g){
         g->mesh = NULL;
     }
     if(g->ghost) {
+        sc_array_destroy(g->ghost_data);
         p8est_ghost_destroy(g->ghost);
         g->ghost = NULL;
     }
@@ -104,7 +101,6 @@ void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quad
     if(!g || !octant || !octant->p.user_data) return;
     
     octant_data_t *data = (octant_data_t *) octant->p.user_data;
-    if(!data->bounds) return;
 
     int x = octant->x;
     int y = octant->y;
@@ -113,35 +109,37 @@ void populate_oct_bounds(local_data_t * g, p4est_topidx_t which_tree, p8est_quad
     double vertex[3];
     p8est_qcoord_to_vertex(g->connectivity, which_tree, x, y, z, vertex);
 
-    data->bounds->x_min = vertex[0];
-    data->bounds->x_max = vertex[0] + 1.0;
-    data->bounds->y_min = vertex[1];
-    data->bounds->y_max = vertex[1] + 1.0;
-    data->bounds->z_min = vertex[2];
-    data->bounds->z_max = vertex[2] + 1.0;
+    data->bounds.x_min = vertex[0];
+    data->bounds.x_max = vertex[0] + 1.0;
+    data->bounds.y_min = vertex[1];
+    data->bounds.y_max = vertex[1] + 1.0;
+    data->bounds.z_min = vertex[2];
+    data->bounds.z_max = vertex[2] + 1.0;
 }
 
 void populate_particles(local_data_t * g, octant_data_t * data){
-    if(!g || !data || !data->buffer || !data->buffer->particles || !data->bounds) return;
+    if(!g || !data || !data->buffer || !data->buffer->particles) return;
     
     // Initialize random state with rank to ensure different seeds per process
     rand_object = (uint64_t)(time(NULL) + g->mpi->mpirank * 1000);
     
     for(int i = 0; i < data->buffer->count; i++){
         particle_t * p = &data->buffer->particles[i];
+
+        p->octant_id = data->octant_id;
         
         // Generate random positions within bounds
         double rand_x = sc_rand(&rand_object);
         double rand_y = sc_rand(&rand_object);
         double rand_z = sc_rand(&rand_object);
         
-        p->x = data->bounds->x_min + rand_x * (data->bounds->x_max - data->bounds->x_min); //always 1 for max-min but could be scaled different for other connectivities
-        p->y = data->bounds->y_min + rand_y * (data->bounds->y_max - data->bounds->y_min);
-        p->z = data->bounds->z_min + rand_z * (data->bounds->z_max - data->bounds->z_min);
+        p->x = data->bounds.x_min + rand_x * (data->bounds.x_max - data->bounds.x_min); //always 1 for max-min but could be scaled different for other connectivities
+        p->y = data->bounds.y_min + rand_y * (data->bounds.y_max - data->bounds.y_min);
+        p->z = data->bounds.z_min + rand_z * (data->bounds.z_max - data->bounds.z_min);
         
-        printf("x bound:%.2f-%.2f p->x: %.3f\n", data->bounds->x_min, data->bounds->x_max, p->x);
-        printf("y bound:%.2f-%.2f p->y: %.3f\n", data->bounds->y_min, data->bounds->y_max, p->y);
-        printf("z bound:%.2f-%.2f p->z: %.3f\n", data->bounds->z_min, data->bounds->z_max, p->z);
+        if(g->mpi->mpirank == 0) printf("x bound:%.2f-%.2f p->x: %.3f\n", data->bounds.x_min, data->bounds.x_max, p->x);
+        if(g->mpi->mpirank == 0) printf("y bound:%.2f-%.2f p->y: %.3f\n", data->bounds.y_min, data->bounds.y_max, p->y);
+        if(g->mpi->mpirank == 0) printf("z bound:%.2f-%.2f p->z: %.3f\n", data->bounds.z_min, data->bounds.z_max, p->z);
 
         // Calculate tangential velocity in 3D
         double dx = p->x - g->planet_xyz[0];
@@ -179,7 +177,7 @@ void populate_particles(local_data_t * g, octant_data_t * data){
         p->vy = v * y_vec / mag;
         p->vz = v * z_vec / mag;
 
-        if(!in_bounds(p, data->bounds)) {
+        if(!in_bounds(p, &data->bounds)) {
             printf("ERROR: Particle initialized outside bounds\n");
         }
     }
@@ -198,18 +196,9 @@ void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octan
     }
     
     octant_data_t *data = (octant_data_t *) octant->p.user_data;
-
     data->buffer = (particle_buffer_t *) calloc(1, sizeof(particle_buffer_t));
     if(!data->buffer) {
         printf("ERROR: Failed to allocate particle buffer\n");
-        free(octant->p.user_data);
-        octant->p.user_data = NULL;
-        return;
-    }
-    data->bounds = (octant_bounds_t *) calloc(1, sizeof(octant_bounds_t));
-    if(!data->bounds) {
-        printf("ERROR: Failed to allocate octant bounds\n");
-        free(data->buffer);
         free(octant->p.user_data);
         octant->p.user_data = NULL;
         return;
@@ -219,17 +208,16 @@ void oct_init(p8est_t *p8est, p4est_topidx_t which_tree, p8est_quadrant_t *octan
     data->buffer->particles = (particle_t *) calloc(data->buffer->capacity, sizeof(particle_t));
     if(!data->buffer->particles) {
         printf("ERROR: Failed to allocate particles array\n");
-        free(data->bounds);
         free(data->buffer);
         free(octant->p.user_data);
         octant->p.user_data = NULL;
         return;
     }
-
     data->octant_id = g->num_octants++;
+    data->mpirank = g->mpi->mpirank;
 
     populate_oct_bounds(g, which_tree, octant);
-    populate_particles(g, data);
+    //populate_particles(g, data);
 }
 
 bool in_bounds(particle_t * p, octant_bounds_t * bounds){
@@ -248,11 +236,10 @@ int query_oct_id(local_data_t * g, particle_t * p){
         if(!oct || !oct->p.user_data) continue;
         
         octant_data_t * data = (octant_data_t *) oct->p.user_data;
-        if(!data->bounds) continue;
 
-        if(in_bounds(p, data->bounds)){
-            printf("\nnew oct: %d, particle (%.2f, %.2f, %.2f) being sent", data->octant_id, p->x, p->y, p->z);
-            printf("\nbounds- x: %.2f, y:%.2f, z:%.2f \n", data->bounds->x_min, data->bounds->y_min, data->bounds->z_min);
+        if(in_bounds(p, &data->bounds)){
+            if(g->mpi->mpirank == 0) printf("\nnew oct: %d, particle (%.2f, %.2f, %.2f) being sent", data->octant_id, p->x, p->y, p->z);
+            if(g->mpi->mpirank == 0) printf("\nbounds- x: %.2f, y:%.2f, z:%.2f \n", data->bounds.x_min, data->bounds.y_min, data->bounds.z_min);
             return data->octant_id;
         }
     }
@@ -285,21 +272,20 @@ void insert_particle(particle_t * p, particle_buffer_t * buffer){
         buffer->capacity = new_capacity;
     }
     
-    printf("\nparticle put in buffer index %d (INSERT NUMBER %d)\n", buffer->count - 1, num_insert);
     
     buffer->particles[buffer->count] = *p;
     buffer->count++;
 }
 
-void insert_particle_into_outgoing(local_data_t * g, particle_t * p, int new_id){
+void insert_particle_into_outgoing(local_data_t * g, p8est_quadrant_t *oct, particle_t * p, int new_id){
     if(!g || !p) return;
     
     if(new_id == -1){
-        // TODO: Handle ghost case
+        //insert_ghost_particle(g, oct, p);
         return;
     }
     
-    printf("inserting particle into octant: %d\n", new_id);
+    if(g->mpi->mpirank == 0) printf("inserting particle into octant: %d\n", new_id);
     
     if(!g->outgoing_local){
         g->outgoing_local = (octant_data_t *) calloc(g->mesh->local_num_quadrants, sizeof(octant_data_t));
@@ -308,12 +294,11 @@ void insert_particle_into_outgoing(local_data_t * g, particle_t * p, int new_id)
             return;
         }
         
-        printf("allocated %zu bytes\n", g->mesh->local_num_quadrants * sizeof(octant_data_t));
+        if(g->mpi->mpirank == 0) printf("allocated %zu bytes\n", g->mesh->local_num_quadrants * sizeof(octant_data_t));
         
         for(int i = 0; i < g->mesh->local_num_quadrants; ++i){
             g->outgoing_local[i].octant_id = -2; // dummy value
             g->outgoing_local[i].buffer = NULL;
-            g->outgoing_local[i].bounds = NULL;
         }
     }
     
@@ -401,7 +386,7 @@ void combine_local(local_data_t * g){
                g->outgoing_local[j].buffer->particles){
                 
                 for(int k = 0; k < g->outgoing_local[j].buffer->count; ++k){
-                    printf("\noct: %d, particle: %d being pushed-back", data->octant_id, k);
+                    if(g->mpi->mpirank == 0) printf("\noct: %d, particle: %d being pushed-back", data->octant_id, k);
                     insert_particle(&g->outgoing_local[j].buffer->particles[k], data->buffer);
                 }
                 break;
@@ -421,19 +406,19 @@ void populate_send_buffers(local_data_t * g){
         octant_data_t * data = (octant_data_t *) oct->p.user_data;
         if(!data->buffer || !data->buffer->particles) continue;
         
-        print_DEBUG_particle_data(g, data);
+        if(g->mpi->mpirank == 0) print_DEBUG_particle_data(data);
         
         //Process backwards
         for (int j = data->buffer->count - 1; j >= 0; --j) {
             particle_t * p = &data->buffer->particles[j];
             int new_id = query_oct_id(g, p);
 
-            if(new_id == data->octant_id || new_id == -1) continue; // particle not transferred
+            if(new_id == data->octant_id) continue; // particle not transferred
             
             num_switch_id++;
-            insert_particle_into_outgoing(g, &data->buffer->particles[j], new_id);
+            insert_particle_into_outgoing(g, oct, &data->buffer->particles[j], new_id);
             remove_particle(data->buffer, j);
-            printf("\nnum_switched = %d", num_switch_id);
+            if(g->mpi->mpirank == 0) printf("\nnum_switched = %d", num_switch_id);
         }
     }
 }
@@ -444,8 +429,9 @@ void do_dynamics(local_data_t * g){
     for (p4est_locidx_t i = 0; i < g->mesh->local_num_quadrants; ++i) {
         p8est_quadrant_t *oct = p8est_mesh_quadrant_cumulative(g->p8est, g->mesh, i, NULL, NULL);
         if(!oct || !oct->p.user_data) continue;
-        
         octant_data_t * data = (octant_data_t *) oct->p.user_data;
+
+        
         if(!data->buffer || !data->buffer->particles) continue;
         
         for(int j = 0; j < data->buffer->count; j++){
@@ -473,10 +459,105 @@ void do_dynamics(local_data_t * g){
             p->x += p->vx * g->timestep;
             p->y += p->vy * g->timestep;
             p->z += p->vz * g->timestep;
+
+            //global wrap
+            double sum_trick = p->x + p->y + p->z; //less lines than keeping a bool checker
+            if(p->x > global_bound) p->x -= global_bound;
+            if(p->x < 0) p->x += global_bound;
+
+            if(p->y > global_bound) p->y -= global_bound;
+            if(p->y < 0) p->y += global_bound;
+
+            if(p->z > global_bound) p->z -= global_bound;
+            if(p->z < 0) p->z += global_bound;
+
+            if(p->x + p->y + p->z != sum_trick){//retangitize after periodic switch
+                double dx = p->x - g->planet_xyz[0];
+                double dy = p->y - g->planet_xyz[1];
+                double dz = p->z - g->planet_xyz[2];
+                double r = sqrt(dx*dx + dy*dy + dz*dz);
+
+                double v = sqrt(g->grav_const * g->planet_mass / r);
+        
+                //Arbitrary vector
+                double ax = 0.7, ay = 1.0, az = 0.4;
+                if (fabs(ax - dx) < 1e-6 && fabs(ay - dy) < 1e-6) {
+                    ax = 0.2; ay = 0.5; az = 1.0;
+                }
+
+                //Xross product
+                double x_vec = dy * az - dz * ay;
+                double y_vec = dz * ax - dx * az;
+                double z_vec = dx * ay - dy * ax;
+                double mag = sqrt(x_vec*x_vec + y_vec*y_vec + z_vec*z_vec);
+
+                if(mag < 1e-12) {
+                    printf("WARNING: Zero tangential velocity\n");
+                    p->vx = p->vy = p->vz = 0.0;
+                    continue;
+                }
+
+                p->vx = v * x_vec / mag;
+                p->vy = v * y_vec / mag;
+                p->vz = v * z_vec / mag;
+            }
+        }
+    }
+}
+/*
+void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t * p){
+    octant_data_t * data = (octant_data_t *) oct->p.user_data;
+    //g and p are always valid from insert_particle_into_outgoing
+    if(g->outgoing_ghost == NULL){
+        g->outgoing_ghost = (octant_data_t **) calloc(g->mpi->mpisize, sizeof(ghost_send_t));
+        if(!g->outgoing_ghost){
+            printf("\nFailed to allocate ghost 2d array");
+            return;
+        }
+    }
+    //static data after inital population only needs acessing, (bounds and octant rank/octant_id) not the dynamic buffer for an exchange every loop
+    for (int i = 0; i < g->ghost->ghosts.elem_count; ++i) {
+        //ghost_exchange_data_t * ghost_data = (ghost_exchange_data_t *) sc_array_index(g->ghost_data, i);
+
+        if(!ghost_data){
+            printf("GHOST OCTANT DATA IS NOT ALLOCATED");
+            return;
+        }
+        if(g->mpi->mpirank == 0) printf("GETTING A REAL OCTANT DATA");
+        if(in_bounds(p, &ghost_data->bounds)){
+            if(g->mpi->mpirank == 0) printf("\nnew oct: %d, particle (%.2f, %.2f, %.2f) being sent", ghost_data->octant_id, p->x, p->y, p->z);
+            if(g->mpi->mpirank == 0) printf("\nbounds- x: %.2f, y:%.2f, z:%.2f \n", ghost_data->bounds.x_min, ghost_data->bounds.y_min, ghost_data->bounds.z_min);
+
+            //prep to put particle p in g->outgoing_ghost[ghost_data->mpirank]
+            if(!g->outgoing_ghost[ghost_data->mpirank]){
+                int no = total_octants / g->mpi->mpisize + 2; //safe close overestimate on number of octants to init, assuming uniform partitioning
+                g->outgoing_ghost[ghost_data->mpirank] = (octant_data_t *) calloc(no, sizeof(octant_data_t));
+            }
+            //index specific octant too
+            octant_data_t * insert_oct = &g->outgoing_ghost[ghost_data->mpirank][ghost_data->octant_id];
+            if(!insert_oct){
+                insert_oct = (octant_data_t *) calloc(1, sizeof(octant_data_t));
+                //match octant id to ghost access so it can be easily combined after mpi
+                insert_oct->octant_id = ghost_data->octant_id;
+                insert_oct->buffer = (particle_buffer_t *) calloc(1, sizeof(particle_buffer_t));
+                insert_oct->buffer->capacity = 10;
+                insert_oct->buffer->count = 0;
+                insert_oct->buffer->particles = (particle_t *) calloc(10, sizeof(particle_t));
+            }
+            if(g->mpi->mpirank == 0) printf("\nGOT through allocation, actual ghost insertion happing now");
+            if(g->mpi->mpirank == 0) printf("\nparticle going to ghost_octant:%d on rank: %d on local_loop:%d", ghost_data->octant_id, ghost_data->mpirank, i);
+            insert_particle(p, insert_oct->buffer);
         }
     }
 }
 
+void send_ghost(local_data_t * g){
+    if(g->outgoing_ghost == NULL)  return;
+
+
+
+}
+*/
 void write_vtk(local_data_t * g, const char *output_dir, int cur_step){
     char vtk_filename[256];
     snprintf(vtk_filename, sizeof(vtk_filename), "%s/particles_rank%d_step%d.vtk", output_dir, g->mpi->mpirank, cur_step);
@@ -521,17 +602,22 @@ void loop(local_data_t * g, const char *output_dir){
     if(!g) return;
     
     for(int cur_step = 0; cur_step < g->num_steps; ++cur_step){
-        printf("\n=== Step %d ===\n", cur_step);
+        if(g->mpi->mpirank == 0) printf("\n=== Step %d ===\n", cur_step);
         write_vtk(g, output_dir, cur_step);
         
         do_dynamics(g);
+
         populate_send_buffers(g);
         print_DEBUG_send_data(g);
         
         // Combine local transfer data
         combine_local(g);
+
+        //send_ghost(g);
+
+        //send and recv ghost particles
         
-        printf("Completed step %d\n", cur_step);
+        if(g->mpi->mpirank == 0) printf("Completed step %d\n", cur_step);
     }
 }
 
@@ -541,14 +627,14 @@ void run(int argc, char **argv){
     memset(g, 0, sizeof(*g));
 
     // Initialize parameters
-    g->ppq = 20; // particles per octant
+    g->ppq = 1; // particles per octant
     g->planet_xyz[0] = 1.5; // mid = (1.5)^3 for a (3.0)^3 box
     g->planet_xyz[1] = 1.5;
     g->planet_xyz[2] = 1.5;
     g->planet_mass = 0.07;
     g->grav_const = 1.0;
     g->num_octants = 0;
-    g->num_steps = 200;
+    g->num_steps = 50;
     g->timestep = 0.5;
 
     mpi_context_t mpi_context;
@@ -563,6 +649,10 @@ void run(int argc, char **argv){
         cleanup(g);
         return;
     }
+    if(g->mpi->mpisize > total_octants){
+        printf("Too many processors for the number of octants in this mesh (%d) > (%d)", g->mpi->mpisize, total_octants);
+        return;
+    }
     
     p8est_partition(g->p8est, 0, NULL); // 0 and NULL for uniform weight distribution
 
@@ -572,7 +662,6 @@ void run(int argc, char **argv){
         cleanup(g);
         return;
     }
-    
     g->mesh = p8est_mesh_new(g->p8est, g->ghost, P8EST_CONNECT_FULL);
     if(!g->mesh) {
         printf("ERROR: Failed to create mesh\n");
@@ -584,21 +673,45 @@ void run(int argc, char **argv){
     snprintf(output_dir, sizeof(output_dir), "particle_output_rank%d", g->mpi->mpirank);
     mkdir(output_dir, 0777); //full permissions
 
+    //do ghost exchange once after init
+    //g->ghost_data = sc_array_new_count(sizeof(ghost_exchange_data_t), g->ghost->ghosts.elem_count);
+    sc_array_t ghost_data_sc;
+    sc_array_init(&ghost_data_sc, sizeof(octant_data_t));
+    sc_array_resize(&ghost_data_sc, g->ghost->ghosts.elem_count);
+    p8est_ghost_exchange_data(g->p8est, 
+        g->ghost,
+        ghost_data_sc.array);  // pass the raw array pointer
+    if(g->mpi->mpirank == 0){
+
+    for(int i = 0; i < g->ghost->ghosts.elem_count; i++){
+        octant_data_t * ghost_data = (octant_data_t *) sc_array_index(&ghost_data_sc, i);
+        if(i==0) printf("\n\n DEBUG _____________rank:%d ", g->mpi->mpirank);
+        //print each rank id and bounds min of ghost octant
+        if(!ghost_data){
+            printf("\nGHOST DATA NOT ALLOCATED");
+            return;
+        }
+        printf("\nghost data- \nrank:%d, \nid:%d, \nbounds- xm:%.2f, ym:%.2f, zm:%.2f\n", 
+                ghost_data->mpirank, ghost_data->octant_id, ghost_data->bounds.x_min, ghost_data->bounds.y_min, ghost_data->bounds.z_min);
+
+    }
+    }
+    return;
     loop(g, output_dir);
     cleanup(g);
 }
 
-void print_DEBUG_particle_data(const local_data_t * g, const octant_data_t * data){
-    if(!g || !data || !data->buffer || !data->buffer->particles || !data->bounds) return;
+void print_DEBUG_particle_data(const octant_data_t * data){
+    if(!data || !data->buffer || !data->buffer->particles) return;
     
     printf("\n\n");
     for(int i = 0; i < data->buffer->count; i++){
         if(i == 0){
             printf("\n\n Particle data of octant:%d -- \n", data->octant_id);
             printf("Octant Bounds: x: %.1f-%.1f, y: %.1f-%.1f, z:%.1f-%.1f",
-                   data->bounds->x_min, data->bounds->x_max, 
-                   data->bounds->y_min, data->bounds->y_max, 
-                   data->bounds->z_min, data->bounds->z_max);
+                   data->bounds.x_min, data->bounds.x_max, 
+                   data->bounds.y_min, data->bounds.y_max, 
+                   data->bounds.z_min, data->bounds.z_max);
         }
         printf("\n\nparticle :%d x: %.3f, y: %.3f, z: %.3f", 
                i, data->buffer->particles[i].x, data->buffer->particles[i].y, data->buffer->particles[i].z);
@@ -620,10 +733,10 @@ void print_DEBUG_send_data(const local_data_t * g){
     for(int i = 0; i < g->mesh->local_num_quadrants; ++i){
         if(g->outgoing_local[i].octant_id == -2) continue; // Skip unused slots
         
-        printf("\n\nDATA going to octant %d\n", g->outgoing_local[i].octant_id);
+        if(g->mpi->mpirank == 0) printf("\n\nDATA going to octant %d\n", g->outgoing_local[i].octant_id);
         if(g->outgoing_local[i].buffer && g->outgoing_local[i].buffer->particles){
             for(int j = 0; j < g->outgoing_local[i].buffer->count; ++j){
-                printf("particle %d, x: %.3f, y:%.3f, z:%.3f\n", 
+                if(g->mpi->mpirank == 0) printf("particle %d, x: %.3f, y:%.3f, z:%.3f\n", 
                 j,
                 g->outgoing_local[i].buffer->particles[j].x,
                 g->outgoing_local[i].buffer->particles[j].y,
