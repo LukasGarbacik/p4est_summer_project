@@ -50,11 +50,6 @@ typedef struct {
     int mpirank; //makes rank public to other octants when inserting ghost particles (corner funciton)
 } octant_data_t;
 
-typedef struct {
-    octant_data_t * octants; //array of octant data with id's of the correct octants on receving rank
-    int rank; //send rank
-} ghost_send_t;
-
 //global struct holding static data (read only)
 typedef struct {
 
@@ -64,6 +59,7 @@ typedef struct {
     p8est_t * p8est; 
     p8est_ghost_t *ghost;
     p8est_mesh_t * mesh;
+    sc_array_t * ghost_data;
 
     //static information
     int ppq; //particles per quadrant 
@@ -78,9 +74,8 @@ typedef struct {
     octant_data_t * outgoing_local; //local array of octant data to be loaded
     octant_data_t ** outgoing_ghost; // outgoing_ghost[i] (i) is rank of recv, outgoing_ghost[i]->octants[j].octant_id is octant_id of recv octant over ghost
 
-    sc_array_t * ghost_data; //mpi-loaded data array after oct_init (pre-mpi particle transfer info)
-
-    //counts array
+    int **send_counts;
+    int **recv_counts;
 } local_data_t;
 
 //setup
@@ -97,6 +92,7 @@ void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t *
 void remove_particle(particle_buffer_t * buffer, int index);
 void combine_local(local_data_t * g);
 void do_dynamics(local_data_t * g);
+void send_ghost(local_data_t * g)
 //helper
 bool in_bounds(particle_t * p, octant_bounds_t * bounds);
 int query_oct_id(local_data_t * g, particle_t * p);
@@ -107,7 +103,9 @@ void loop(local_data_t * g, const char *output_dir);
 void cleanup(local_data_t * g);
 void free_particle_data(local_data_t * g);
 void free_local(local_data_t * g);
+void free_ghost(local_data_t * g);
 //output
-void print_DEBUG_particle_data(const octant_data_t * data);
-void print_DEBUG_send_data(const local_data_t * g);
+//void print_DEBUG_particle_data(const octant_data_t * data);
+//void print_DEBUG_send_data(const local_data_t * g);
 void write_vtk(local_data_t * g, const char *output_dir, int cur_step);
+void print_long_DEBUG(local_data_t * g, int loop_num);
