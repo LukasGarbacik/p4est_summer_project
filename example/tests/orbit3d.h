@@ -7,14 +7,15 @@
 #include <p8est_ghost.h>
 #include <p8est_geometry.h>
 #include <p8est_vtk.h>
+#include <sc.h>
+#include <sc_random.h>
+#include <sys/stat.h>
+#include <mpi.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <sc_random.h>
-#include <sc.h>
 #include <stdbool.h>
 #include <time.h>
 #include <assert.h>
-#include <sys/stat.h>
 
 #define total_octants 27
 #define global_bound 3.0
@@ -69,6 +70,8 @@ typedef struct {
     int num_octants;
     int num_steps;
     double timestep;
+    int total_considered_oct;
+    int no; //ghost estimate for number of octants (close upper bound assuming uniform octant distribution)
 
     //send/recv
     octant_data_t * outgoing_local; //local array of octant data to be loaded
@@ -92,7 +95,9 @@ void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t *
 void remove_particle(particle_buffer_t * buffer, int index);
 void combine_local(local_data_t * g);
 void do_dynamics(local_data_t * g);
-void send_ghost(local_data_t * g)
+void send_ghost(local_data_t * g);
+void send_recv_counts(local_data_t * g);
+void send_recv_particles(local_data_t * g);
 //helper
 bool in_bounds(particle_t * p, octant_bounds_t * bounds);
 int query_oct_id(local_data_t * g, particle_t * p);
@@ -109,3 +114,4 @@ void free_ghost(local_data_t * g);
 //void print_DEBUG_send_data(const local_data_t * g);
 void write_vtk(local_data_t * g, const char *output_dir, int cur_step);
 void print_long_DEBUG(local_data_t * g, int loop_num);
+void print_prefix_matrix(local_data_t *g);
