@@ -3,7 +3,6 @@
 static sc_rand_state_t rand_object;
 static int num_switch_id = 0;
 static int num_insert = 0;
-//DEBUG
 void free_particle_data(local_data_t * g){
     if(!g || !g->mesh) return;
     
@@ -257,7 +256,7 @@ void insert_particle(particle_t * p, particle_buffer_t * buffer){
     num_insert++;
     
     if(!buffer->particles){
-        //printf("ERROR: Null particles array in insert_particle (INSERT NUMBER %d)\n", num_insert);
+        printf("ERROR: Null particles array in insert_particle (INSERT NUMBER %d)\n", num_insert);
         return;
     }
     
@@ -266,8 +265,8 @@ void insert_particle(particle_t * p, particle_buffer_t * buffer){
         size_t new_capacity = buffer->capacity * 2;
         particle_t* new_particles = realloc(buffer->particles, new_capacity * sizeof(particle_t));
         if(!new_particles){
-            //printf("ERROR: Failed to reallocate particles buffer from %zu to %zu\n", 
-                   //buffer->capacity, new_capacity);
+            printf("ERROR: Failed to reallocate particles buffer from %zu to %zu\n", 
+                   buffer->capacity, new_capacity);
             return;
         }
         buffer->particles = new_particles;
@@ -291,7 +290,7 @@ void insert_particle_into_outgoing(local_data_t * g, p8est_quadrant_t *oct, part
     if(!g->outgoing_local){
         g->outgoing_local = (octant_data_t *) calloc(g->mesh->local_num_quadrants, sizeof(octant_data_t));
         if(!g->outgoing_local) {
-            //printf("ERROR: Failed to allocate outgoing_local\n");
+            printf("ERROR: Failed to allocate outgoing_local\n");
             return;
         }
         
@@ -312,7 +311,7 @@ void insert_particle_into_outgoing(local_data_t * g, p8est_quadrant_t *oct, part
             // First unused slot - initialize it
             g->outgoing_local[i].buffer = (particle_buffer_t *) calloc(1, sizeof(particle_buffer_t));
             if(!g->outgoing_local[i].buffer) {
-                //printf("ERROR: Failed to allocate particle buffer\n");
+                printf("ERROR: Failed to allocate particle buffer\n");
                 return;
             }
             
@@ -322,7 +321,7 @@ void insert_particle_into_outgoing(local_data_t * g, p8est_quadrant_t *oct, part
             g->outgoing_local[i].buffer->particles = (particle_t *) calloc(10, sizeof(particle_t));
             
             if(!g->outgoing_local[i].buffer->particles) {
-                //printf("ERROR: Failed to allocate particles array\n");
+                printf("ERROR: Failed to allocate particles array\n");
                 free(g->outgoing_local[i].buffer);
                 g->outgoing_local[i].buffer = NULL;
                 return;
@@ -337,8 +336,8 @@ void insert_particle_into_outgoing(local_data_t * g, p8est_quadrant_t *oct, part
 
 void remove_particle(particle_buffer_t * buffer, int index){
     if(!buffer || !buffer->particles || index < 0 || index >= buffer->count){
-        //printf("ERROR: Invalid remove_particle call - buffer=%p, index=%d, count=%d\n", 
-               //(void*)buffer, index, buffer ? buffer->count : -1);
+        printf("ERROR: Invalid remove_particle call - buffer=%p, index=%d, count=%d\n", 
+               (void*)buffer, index, buffer ? buffer->count : -1);
         return;
     }
 
@@ -390,7 +389,6 @@ void combine_local(local_data_t * g){
             }
         }
     }
-    free_local(g);
 }
 
 void populate_send_buffers(local_data_t * g){
@@ -422,7 +420,6 @@ void populate_send_buffers(local_data_t * g){
             remove_particle(data->buffer, j);
         }
     }
-    //for()
 }
 
 void do_dynamics(local_data_t * g){
@@ -513,13 +510,11 @@ void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t *
     for (int i = 0; i < g->ghost->ghosts.elem_count; ++i) {
         octant_data_t * ghost_data = (octant_data_t *) sc_array_index(g->ghost_data, i);
         if(!ghost_data){
-            printf("GHOST OCTANT DATA IS NOT ALLOCATED");
+            printf("ERROR: GHOST OCTANT DATA IS NOT ALLOCATED");
             return;
         }
         if(in_bounds(p, &ghost_data->bounds)){
-            //if(g->mpi->mpirank == 0) printf("\nnew oct: %d, particle (%.2f, %.2f, %.2f) being sent", ghost_data->octant_id, p->x, p->y, p->z);
-            //if(g->mpi->mpirank == 0) printf("\nbounds- x: %.2f, y:%.2f, z:%.2f \n", ghost_data->bounds.x_min, ghost_data->bounds.y_min, ghost_data->bounds.z_min);
-
+            p->octant_id = ghost_data->octant_id;//new octant id for outgoing particle
             //prep to put particle p in g->outgoing_ghost[ghost_data->mpirank]
             if(!g->outgoing_ghost[ghost_data->mpirank]){
                 g->outgoing_ghost[ghost_data->mpirank] = (octant_data_t *) calloc(g->no, sizeof(octant_data_t));
@@ -556,49 +551,115 @@ void free_ghost(local_data_t * g){
         free(g->outgoing_ghost[i]);
         g->outgoing_ghost[i] = NULL;
     }
+
+    for(int i = 0; i < g->mpi->mpisize; i++){
+        if(g->send_raw_data && g->send_raw_data[i]){
+            free(g->send_raw_data[i]);
+            g->send_raw_data[i] = NULL;
+        }
+        if(g->recv_raw_data && g->recv_raw_data[i]){
+            free(g->recv_raw_data[i]);
+            g->recv_raw_data[i] = NULL;
+        }
+    }
+
     free(g->outgoing_ghost);
     g->outgoing_ghost = NULL;
-    //DEBUG: NEED TO FREE INT ** FOR EACH AFTER ALL LOOPS
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        free(g->send_counts[i]);
-        free(g->recv_counts[i]);
-        g->send_counts[i] = NULL;
-        g->recv_counts[i] = NULL;
+    free(g->send_raw_data);
+    g->send_raw_data = NULL;
+    free(g->recv_raw_data);
+    g->recv_raw_data = NULL;
+    free(g->send_bytes_count);
+    g->send_bytes_count = NULL;
+    free(g->recv_bytes_count);
+    g->recv_bytes_count = NULL;
+}
+
+void populate_byte_buffers(local_data_t * g){
+    if(!g->send_bytes_count) g->send_bytes_count = (int *) calloc(g->mpi->mpisize, sizeof(int));
+    if(!g->recv_bytes_count) g->recv_bytes_count = (int *) calloc(g->mpi->mpisize, sizeof(int));
+
+    //if given rank or octant is not allocated, its array(s) will be 0 for bytes
+    
+    //send_bytes_count[i] format:
+    //int #octants
+    //loop:
+    //local_octant_id
+    //^count
+    //particle raw data
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        if(!g->outgoing_ghost[rank]){
+            g->send_bytes_count[rank] = 0;
+            continue;   
+        }
+        int total = 0;
+        total += sizeof(int); //#octants
+        for(int oct = 0; oct < g->no; oct++){
+            if(g->outgoing_ghost[rank][oct].buffer){
+                total += 2 * sizeof(int); //local oct_id and particle count
+                total += g->outgoing_ghost[rank][oct].buffer->count * sizeof(particle_t);
+            }
+        }
+        g->send_bytes_count[rank] = total;
+    }
+
+    if(!g->send_raw_data){
+        g->send_raw_data = (char **) calloc(g->mpi->mpisize, sizeof(char *));
+    }
+    if(!g->recv_raw_data){
+        g->recv_raw_data = (char **) calloc(g->mpi->mpisize, sizeof(char *));
+    }
+
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        g->send_raw_data[rank] = (char *) malloc(g->send_bytes_count[rank]); //can do malloc(0), and free, but dont access
+        char * ptr = g->send_raw_data[rank];
+
+        if(!g->outgoing_ghost[rank]) continue;
+
+        int num_oct_count = 0;
+        ptr += sizeof(int);//skip total oct until all loops finish
+
+        for(int oct = 0; oct < g->no; oct++){
+            if(g->outgoing_ghost[rank][oct].buffer){
+                num_oct_count++;
+                if(!g->outgoing_ghost[rank][oct].buffer->particles){
+                    printf("\nERROR: particle buffer wrongfully not allocated when doing byte conversion");
+                    return;
+                }
+
+                //copy octant id to buffer
+                memcpy(ptr, &g->outgoing_ghost[rank][oct].octant_id, sizeof(int));
+                ptr += sizeof(int);
+
+                //copy given oct's buffer count id to buffer
+                int count = g->outgoing_ghost[rank][oct].buffer->count;
+                memcpy(ptr, &count, sizeof(int));
+                ptr += sizeof(int);
+                
+                //copy given particle buffer into byte buffer
+                memcpy(ptr, g->outgoing_ghost[rank][oct].buffer->particles, count * sizeof(particle_t));
+                ptr += count * sizeof(particle_t);
+            }
+        }
+        memcpy(g->send_raw_data[rank], &num_oct_count, sizeof(int));
     }
 }
 
+
 void send_recv_counts(local_data_t * g){
     if(g->outgoing_ghost == NULL)  return;
-    if(!g->send_counts) g->send_counts = (int **) calloc(g->mpi->mpisize, sizeof(int *)); //first pop of matrix
-    if(!g->recv_counts) g->recv_counts = (int **) calloc(g->mpi->mpisize, sizeof(int *)); //first pop of matrix
 
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        g->send_counts[i] = (int *) calloc(g->no, sizeof(int)); //one count per rank, per octant
-        g->recv_counts[i] = (int *) calloc(g->no, sizeof(int)); //one count per rank, per octant
-    }
-    //if given rank or octant is not allocated, its array(s) will be 0 for counts
-    //populate counts matrix
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        for(int j = 0; j < g->no; j++){
-            if(g->outgoing_ghost[i] && g->outgoing_ghost[i][j].buffer){
-                g->send_counts[i][j] = g->outgoing_ghost[i][j].buffer->count;
-                if(j != 0) g->send_counts[i][j] += g->send_counts[i][j-1];//prefix array (per octant)
-            }
-            else if(j != 0){
-                g->send_counts[i][j] += g->send_counts[i][j-1];
-            }
-        }
-    }
+
     int index = 0;//accounting for the self skip on rank == rank
     MPI_Request recieved_promises[g->mpi->mpisize - 1];
     MPI_Request sent_promises[g->mpi->mpisize - 1];
 
-    //recv counts
+    //recv bytes
     for(int rank = 0; rank < g->mpi->mpisize; rank++){
         if(g->mpi->mpirank == rank) continue;
         MPI_Irecv(
-                g->recv_counts[rank],  //pointer for all incoming counts from that rank
-                /* count */g->no,
+                /*local memory*/&g->recv_bytes_count[rank],
+                /* count */1,
                 MPI_INT, 
                 /* from rank:*/rank, 
                 /* tag */ 0,
@@ -606,16 +667,16 @@ void send_recv_counts(local_data_t * g){
                 &recieved_promises[index]);
         index++;
     }
-    //send counts
+    //send bytes
     index = 0;
     for(int rank = 0; rank < g->mpi->mpisize; ++rank){
         if(g->mpi->mpirank == rank) continue;
         MPI_Isend(
-                g->send_counts[rank],  //pointer for all incoming counts from that rank
-                /* count */g->no,
+                /*local memory*/&g->send_bytes_count[rank],
+                /* count */1,
                 MPI_INT, 
                 /*  rank*/rank, 
-                /* to rank: */ 0,
+                /* tag */ 0,
                 g->mpi->mpicomm,
                 &sent_promises[index]);
         index++;
@@ -625,7 +686,115 @@ void send_recv_counts(local_data_t * g){
 }
 
 void send_recv_particles(local_data_t * g){
+    if(g->send_bytes_count == NULL || g->recv_bytes_count == NULL) return;
+    if(g->send_raw_data == NULL || g->recv_raw_data == NULL) return;
+    if(g->outgoing_ghost == NULL)  return;
 
+
+    //allocate temp data for direct mpi recv based on the buffer sizes in recv_bytes_count
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        if(g->recv_bytes_count[rank] > 0){
+            g->recv_raw_data[rank] = (char *) malloc(g->recv_bytes_count[rank]);
+        }
+    }
+
+
+    int index = 0;//accounting for the self skip on rank == rank
+    MPI_Request recieved_promises[g->mpi->mpisize - 1];
+    MPI_Request sent_promises[g->mpi->mpisize - 1];
+
+    //if given send is 0, skip send and fill promise on both sides
+    //else, send prepared buffer
+
+    //recv raw buffers
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        if(g->mpi->mpirank == rank) continue;
+        if(g->recv_bytes_count[rank] == 0){//dummy recv for 0 count
+            MPI_Irecv(NULL, 0, MPI_BYTE, rank, 1, g->mpi->mpicomm, &recieved_promises[index]);
+            index++;
+            continue;
+        }
+        MPI_Irecv(
+            /*local memory*/g->recv_raw_data[rank],
+            /* count */g->recv_bytes_count[rank],
+            MPI_BYTE,
+            rank,
+            1, //tag
+            g->mpi->mpicomm,
+            &recieved_promises[index]
+        );
+        index++;
+    }
+
+    //send raw buffers
+    index = 0; //reset index for send loop
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        if(g->mpi->mpirank == rank) continue;
+        if(g->send_bytes_count[rank] == 0){//dummy recv for 0 count
+            MPI_Isend(NULL, 0, MPI_BYTE, rank, 1, g->mpi->mpicomm, &sent_promises[index]);
+            index++;
+            continue;
+        }
+        MPI_Isend(
+                /*local memory*/g->send_raw_data[rank],
+                /* count */g->send_bytes_count[rank],
+                MPI_BYTE, 
+                /*  rank*/rank, 
+                /* tag */ 1,
+                g->mpi->mpicomm,
+                &sent_promises[index]
+        );
+        index++;
+    }
+    MPI_Waitall(g->mpi->mpisize - 1, recieved_promises, MPI_STATUSES_IGNORE);
+    MPI_Waitall(g->mpi->mpisize - 1, sent_promises, MPI_STATUSES_IGNORE);
+}
+
+void combine_ghost(local_data_t * g){
+    if(g->outgoing_ghost == NULL)  return;
+    if(g->recv_raw_data == NULL || g->recv_bytes_count == NULL) return;
+
+    //dynamic inner loop with resetting buffer pointer relative to the count of octs at the front
+    for(int rank = 0; rank < g->mpi->mpisize; rank++){
+        if(g->mpi->mpirank == rank || g->recv_raw_data[rank] == NULL) continue;
+        char * ptr = g->recv_raw_data[rank];
+        int incoming_octants;
+        memcpy(&incoming_octants, ptr, sizeof(int));
+        ptr += sizeof(int);
+        for(int oct_index = 0; oct_index < incoming_octants; oct_index++){
+            int insert_id;
+            memcpy(&insert_id, ptr, sizeof(int));
+            ptr += sizeof(int);
+            if(insert_id >= g->mesh->local_num_quadrants){
+                printf("\nERROR: Invalid incoming octant id");
+                return;
+            }
+            p8est_quadrant_t *oct = p8est_mesh_quadrant_cumulative(g->p8est, g->mesh, insert_id, NULL, NULL);
+            if(!oct || !oct->p.user_data) continue;
+            octant_data_t * data = (octant_data_t *) oct->p.user_data;
+            if(data->buffer == NULL || data->buffer->particles == NULL){
+                printf("\nLocal octant data wrongfully not allocated when combining ghost");
+                return;
+            }
+
+            int incoming_count;
+            memcpy(&incoming_count, ptr, sizeof(int));
+            ptr += sizeof(int);
+
+            //copy (incoming_count) # particles from ptr to data->buffer->particles
+            for(int i = 0; i < incoming_count; i++){
+                particle_t particle;
+                memcpy(&particle, ptr, sizeof(particle_t));
+                ptr += sizeof(particle_t);
+
+                if(g->mpi->mpirank == 0){
+                    printf("\nParticle info: id:%d x:%.3f, y:%.3f, z:%.3f", particle.octant_id, particle.x, particle.y, particle.z);
+                }
+
+                insert_particle(&particle, data->buffer);
+            }
+        }
+    }
 }
 
 void write_vtk(local_data_t * g, const char *output_dir, int cur_step){
@@ -665,6 +834,7 @@ void write_vtk(local_data_t * g, const char *output_dir, int cur_step){
             fprintf(f, "%f %f %f\n", data->buffer->particles[j].vx, data->buffer->particles[j].vy, data->buffer->particles[j].vz);
         }
     }
+    fclose(f);
 }
 
 
@@ -672,60 +842,45 @@ void loop(local_data_t * g, const char *output_dir){
     if(!g) return;
     
     for(int cur_step = 0; cur_step < g->num_steps; ++cur_step){
+        //visual output
         write_vtk(g, output_dir, cur_step);
         
+        //single step dynamics
         do_dynamics(g);
-
+        
+        //g->outgoing_local/ghost
         populate_send_buffers(g);
+
+        //debug output
         print_long_DEBUG(g, cur_step);
         
-        // Combine local transfer data
+        //combine local data
         combine_local(g);
-
+        
+        //prep ghost mpi transfer
+        populate_byte_buffers(g);
         send_recv_counts(g);
-        print_prefix_matrix(g);
-
+        
+        //ghost transfer
         send_recv_particles(g);
 
-        //send and recv ghost particles
+        //merge incoming with local
+        combine_ghost(g);
+
+        //clear memory
+        free_local(g);
         free_ghost(g);
-        
+
+        int total = 0;
+        for(int i = 0; i < g->mesh->local_num_quadrants; i++){
+            p8est_quadrant_t *oct = p8est_mesh_quadrant_cumulative(g->p8est, g->mesh, i, NULL, NULL);
+            if(!oct || !oct->p.user_data) continue;
+            octant_data_t * data = (octant_data_t *) oct->p.user_data;
+            total += data->buffer->count;
+        }
+        printf("\nRANK:%d has a total of %d particles", g->mpi->mpirank, total);
     }
 }
-
-void print_prefix_matrix(local_data_t *g){
-    char vtk_filename[256];
-    snprintf(vtk_filename, sizeof(vtk_filename), "debug_matrix_rank%d.txt", g->mpi->mpirank);
-    FILE *f = fopen(vtk_filename, "a");
-    if (!f) {
-        printf("Error opening %s\n", vtk_filename);
-        return;
-    }
-
-    fprintf(f, "\n\nSEND COUNTS MATRIX:\n");
-    fflush(f);
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        if(g->mpi->mpirank == i) continue;
-        fprintf(f, "\nTo rank %d", i);
-        fflush(f);
-        for(int j = 0; j < g->no; j++){
-            fprintf(f, "\nghost octant %d (&before) receving %d particles", j, g->send_counts[i][j]);
-            fflush(f);
-        }
-    }
-    fprintf(f, "\n\nRECV COUNTS MATRIX:\n");
-    fflush(f);
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        if(g->mpi->mpirank == i) continue;
-        fprintf(f, "\nFrom rank %d", i);
-        fflush(f);
-        for(int j = 0; j < g->no; j++){
-            fprintf(f, "\nlocal octant %d (&before) receving %d particles", j, g->recv_counts[i][j]);
-            fflush(f);
-        }
-    }
-}
-
 void print_long_DEBUG(local_data_t * g, int loop_num){
     char vtk_filename[256];
     snprintf(vtk_filename, sizeof(vtk_filename), "debug_output_rank%d.txt", g->mpi->mpirank);
@@ -797,6 +952,7 @@ void print_long_DEBUG(local_data_t * g, int loop_num){
         fprintf(f, "\nNo ghost data this loop");
         fflush(f);
     }
+    fclose(f);
 }
 
 void run(int argc, char **argv){
@@ -805,14 +961,14 @@ void run(int argc, char **argv){
     memset(g, 0, sizeof(*g));
 
     // Initialize parameters
-    g->ppq = 1; // particles per octant
+    g->ppq = 10; // particles per octant
     g->planet_xyz[0] = 1.5; // mid = (1.5)^3 for a (3.0)^3 box
     g->planet_xyz[1] = 1.5;
     g->planet_xyz[2] = 1.5;
     g->planet_mass = 0.07;
     g->grav_const = 1.0;
     g->num_octants = 0;
-    g->num_steps = 3;
+    g->num_steps = 50;
     g->timestep = 0.5;
 
     mpi_context_t mpi_context;
@@ -849,11 +1005,15 @@ void run(int argc, char **argv){
 
     //dependant helper data filled after mesh and ghost
     g->total_considered_oct = g->mesh->local_num_quadrants + g->ghost->ghosts.elem_count;
-    g->no = g->total_considered_oct / g->mpi->mpisize + 3;
+    g->no = (g->total_considered_oct / g->mpi->mpisize) + 3;
 
     char output_dir[256];
-    snprintf(output_dir, sizeof(output_dir), "particle_output_rank%d", g->mpi->mpirank);
-    mkdir(output_dir, 0777); //full permissions
+    snprintf(output_dir, sizeof(output_dir), "output_vtk/particle_output_rank%d", g->mpi->mpirank);
+    if(g->mpi->mpirank == 0) {
+        mkdir("output_vtk", 0777); // Only rank 0 creates the main directory
+    }
+    sc_MPI_Barrier(g->mpi->mpicomm);//wait for rank one before other ranks add dirs
+    mkdir(output_dir, 0777);//full permissions
 
     g->ghost_data = (sc_array_t*) malloc(sizeof(sc_array_t));
     if(!g->ghost_data) {

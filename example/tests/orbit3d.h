@@ -77,8 +77,11 @@ typedef struct {
     octant_data_t * outgoing_local; //local array of octant data to be loaded
     octant_data_t ** outgoing_ghost; // outgoing_ghost[i] (i) is rank of recv, outgoing_ghost[i]->octants[j].octant_id is octant_id of recv octant over ghost
 
-    int **send_counts;
-    int **recv_counts;
+    int * send_bytes_count;//total outgoing bytes per rank per loop
+    int * recv_bytes_count;//^^ but incoming
+
+    char ** send_raw_data;
+    char ** recv_raw_data;
 } local_data_t;
 
 //setup
@@ -98,6 +101,8 @@ void do_dynamics(local_data_t * g);
 void send_ghost(local_data_t * g);
 void send_recv_counts(local_data_t * g);
 void send_recv_particles(local_data_t * g);
+void populate_byte_buffers(local_data_t * g);
+void combine_ghost(local_data_t * g);
 //helper
 bool in_bounds(particle_t * p, octant_bounds_t * bounds);
 int query_oct_id(local_data_t * g, particle_t * p);
