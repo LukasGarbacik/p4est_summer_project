@@ -576,6 +576,7 @@ void free_ghost(local_data_t * g){
 }
 
 void populate_byte_buffers(local_data_t * g){
+    if(!g->outgoing_ghost) return;
     if(!g->send_bytes_count) g->send_bytes_count = (int *) calloc(g->mpi->mpisize, sizeof(int));
     if(!g->recv_bytes_count) g->recv_bytes_count = (int *) calloc(g->mpi->mpisize, sizeof(int));
 
@@ -878,7 +879,7 @@ void loop(local_data_t * g, const char *output_dir){
             octant_data_t * data = (octant_data_t *) oct->p.user_data;
             total += data->buffer->count;
         }
-        printf("\nRANK:%d has a total of %d particles", g->mpi->mpirank, total);
+        //printf("\nRANK:%d has a total of %d particles", g->mpi->mpirank, total);
     }
 }
 void print_long_DEBUG(local_data_t * g, int loop_num){
@@ -932,19 +933,21 @@ void print_long_DEBUG(local_data_t * g, int loop_num){
     fprintf(f,"\n\nOutgoing ghost data\n");
     fflush(f);
     bool ghost = false;
-    for(int i = 0; i < g->mpi->mpisize; i++){
-        octant_data_t * rank_array = g->outgoing_ghost[i];
-        if(!rank_array) continue;
-        ghost = true;
-        fprintf(f,"\ndata going to rank: %d", i);
-        fflush(f);
-        for(int j = 0; j < g->no; j++){
-            if(!rank_array[j].buffer) continue;
-            fprintf(f,"\ndata going to rank:%d, octant:%d", i, j);
+    if(g->outgoing_ghost){
+        for(int i = 0; i < g->mpi->mpisize; i++){
+            octant_data_t * rank_array = g->outgoing_ghost[i];
+            if(!rank_array) continue;
+            ghost = true;
+            fprintf(f,"\ndata going to rank: %d", i);
             fflush(f);
-            for(int k = 0; k < rank_array[j].buffer->count; k++){
-                fprintf(f,"\nparticle %d: x:%.3f, y:%.3f, z:%.3f", rank_array[j].buffer->particles[k].x, rank_array[j].buffer->particles[k].y, rank_array[j].buffer->particles[k].z);
+            for(int j = 0; j < g->no; j++){
+                if(!rank_array[j].buffer) continue;
+                fprintf(f,"\ndata going to rank:%d, octant:%d", i, j);
                 fflush(f);
+                for(int k = 0; k < rank_array[j].buffer->count; k++){
+                    fprintf(f,"\nparticle %d: x:%.3f, y:%.3f, z:%.3f", rank_array[j].buffer->particles[k].x, rank_array[j].buffer->particles[k].y, rank_array[j].buffer->particles[k].z);
+                    fflush(f);
+                }
             }
         }
     }
@@ -961,14 +964,14 @@ void run(int argc, char **argv){
     memset(g, 0, sizeof(*g));
 
     // Initialize parameters
-    g->ppq = 10; // particles per octant
+    g->ppq = 7; // particles per octant
     g->planet_xyz[0] = 1.5; // mid = (1.5)^3 for a (3.0)^3 box
     g->planet_xyz[1] = 1.5;
     g->planet_xyz[2] = 1.5;
     g->planet_mass = 0.07;
     g->grav_const = 1.0;
     g->num_octants = 0;
-    g->num_steps = 50;
+    g->num_steps = 200;
     g->timestep = 0.5;
 
     mpi_context_t mpi_context;
