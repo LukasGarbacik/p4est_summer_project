@@ -98,7 +98,6 @@ void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t *
 void remove_particle(particle_buffer_t * buffer, int index);
 void combine_local(local_data_t * g);
 void do_dynamics(local_data_t * g);
-void send_ghost(local_data_t * g);
 void send_recv_counts(local_data_t * g);
 void send_recv_particles(local_data_t * g);
 void populate_byte_buffers(local_data_t * g);
@@ -119,4 +118,3 @@ void free_ghost(local_data_t * g);
 //void print_DEBUG_send_data(const local_data_t * g);
 void write_vtk(local_data_t * g, const char *output_dir, int cur_step);
 void print_long_DEBUG(local_data_t * g, int loop_num);
-void print_prefix_matrix(local_data_t *g);

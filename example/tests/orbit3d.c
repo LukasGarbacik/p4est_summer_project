@@ -20,24 +20,18 @@ void free_particle_data(local_data_t * g){
                 free(data->buffer);
                 data->buffer = NULL;
             }
-            free(data);
-            oct->p.user_data = NULL;
+
         }
     }
 }
 
 void cleanup(local_data_t * g){
     if(!g) return;
-    if(g->ghost_data) {
-        sc_array_destroy(g->ghost_data);
-        free(g->ghost_data);
-        g->ghost_data = NULL;
-    }
     
-    //free_particle_data(g);
-    //DEBUG
-    //free count **'s
+
+    free_particle_data(g);
     
+
     if(g->mesh) {
         p8est_mesh_destroy(g->mesh);
         g->mesh = NULL;
@@ -350,7 +344,7 @@ void remove_particle(particle_buffer_t * buffer, int index){
 }
 
 void free_local(local_data_t * g){
-    if(!g || !g->outgoing_local) return;
+    if(!g || !g->outgoing_local || !g->mesh) return;
     
     for (p4est_locidx_t i = 0; i < g->mesh->local_num_quadrants; ++i) {
         if(g->outgoing_local[i].buffer){
@@ -535,7 +529,7 @@ void insert_ghost_particle(local_data_t * g, p8est_quadrant_t *oct, particle_t *
 }
 
 void free_ghost(local_data_t * g){
-    if(!g->outgoing_ghost) return;
+    if(!g || !g->outgoing_ghost || !g->mpi) return;
     for(int i = 0; i < g->mpi->mpisize; i++){
         if(!g->outgoing_ghost[i]) continue;
         for(int j = 0; j < g->no; j++){
@@ -788,10 +782,6 @@ void combine_ghost(local_data_t * g){
                 memcpy(&particle, ptr, sizeof(particle_t));
                 ptr += sizeof(particle_t);
 
-                if(g->mpi->mpirank == 0){
-                    printf("\nParticle info: id:%d x:%.3f, y:%.3f, z:%.3f", particle.octant_id, particle.x, particle.y, particle.z);
-                }
-
                 insert_particle(&particle, data->buffer);
             }
         }
@@ -1029,7 +1019,6 @@ void run(int argc, char **argv){
     p8est_ghost_exchange_data(g->p8est, g->ghost, g->ghost_data->array);
 
     loop(g, output_dir);
-    printf("\nCLEANUP FUNCTION ON RANK: %d\n", g->mpi->mpirank);
     cleanup(g);
 }
 /*
