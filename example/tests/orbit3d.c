@@ -74,7 +74,7 @@ void p8est_setup(local_data_t * data){
     
     p4est_init(NULL, SC_LP_DEFAULT);
 
-    data->connectivity = p8est_connectivity_new_brick(3, 3, 3, 1, 1, 1);
+    data->connectivity = p8est_connectivity_new_brick(10, 10, 10, 1, 1, 1);
     if(!data->connectivity) {
         printf("ERROR: Failed to create connectivity\n");
         return;

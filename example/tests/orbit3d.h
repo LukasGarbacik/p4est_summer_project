@@ -17,8 +17,8 @@
 #include <time.h>
 #include <assert.h>
 
-#define total_octants 27
-#define global_bound 3.0
+#define total_octants 100
+#define global_bound 10.0
 
 typedef struct {
     double x_min, x_max;
