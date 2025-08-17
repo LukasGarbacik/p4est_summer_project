@@ -18,7 +18,7 @@
 
 #include "orbit.h"
 
-#define p_per_quad 25
+#define p_per_quad 50000
 
 #define grav_const 1 
 
@@ -137,7 +137,7 @@ void quad_init(p4est_t *p4est, p4est_topidx_t which_tree, p4est_quadrant_t *quad
     particle_buffer_t *buf = (particle_buffer_t *) quadrant->p.user_data;
     buf->count = p_per_quad;
     buf->capacity = (p_per_quad > 100) ? 1.2 * p_per_quad : 3 * p_per_quad;
-    buf->particles = (particle_t *) malloc(buf->count * sizeof(particle_t));
+    buf->particles = (particle_t *) malloc(4 * buf->count * sizeof(particle_t)); //4x for all particles (not dynamic)
     for(int i = 0; i < p_per_quad; i++){
         buf->particles[i] = particle_single_init(quadrant);
     }
